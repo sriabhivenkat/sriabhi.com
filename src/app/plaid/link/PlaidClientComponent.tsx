@@ -17,7 +17,6 @@ export default function PlaidClientComponent() {
     const linkToken = searchParams.get('link_token');
     const [title, setTitle] = useState('getting you to plaid...');
 
-    console.log('link token', linkToken);
     if (!linkToken) {
         return <div>Missing link token. Please try again.</div>;
     }
@@ -27,33 +26,8 @@ export default function PlaidClientComponent() {
                 const res = await fetch('/api/exchange-public-token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ public_token }),
+                    body: JSON.stringify({ public_token, institution_name: metadata.institution?.name, institution_id: metadata.institution?.institution_id }),
                 });
-          
-                if (!res.ok) throw new Error('Token exchange failed');
-          
-                const data = await res.json();
-                setTitle('Setting up a few things...');
-                console.log('Success:', data);   
-
-                const res_connect_new_institution = await fetch('/api/connect-new-institution', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        item_id: data.item_id,
-                        plaid_access_token: data.access_token,
-                    }),
-                });
-                if (res_connect_new_institution.status !== 201) throw new Error('New institution connection failed');
-
-                const res_add_institution_accounts = await fetch('/api/add-institution-accounts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        item_id: data.item_id
-                    }),
-                });
-                if (res_add_institution_accounts.status !== 201) throw new Error('New institution connection failed');
 
                 setTitle('All done! You can close this window now.');
             } catch (err) {

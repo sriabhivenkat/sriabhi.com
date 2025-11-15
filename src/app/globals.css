@@ -1,5 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&display=swap");
 @import "tailwindcss";
+@import 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css';
 
 :root {
   --background: #ffffff;
@@ -7,15 +7,21 @@
 }
 
 
-@theme {
-  --font-merriweather: "Merriweather", sans-serif;
-}
+@layer utilities {
+  /* Hide scrollbar for Chrome, Safari, and Opera */
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Hide scrollbar for Firefox */
+  .scrollbar-hidden {
+    scrollbar-width: none;
+  }
+
+  /* Hide scrollbar for IE and Edge */
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,5 +34,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui;
 }
