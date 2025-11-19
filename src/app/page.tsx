@@ -1,166 +1,183 @@
-"use client";
-import { useState, useEffect } from "react";
+'use client';
+import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { getPhotoUrls } from "../../functions/abhiPcCalls";
-import { count } from "console";
+import Navbar from "@/components/Navbar";
+import { PhotoWithMetadata, usePhotoStore } from "../../hooks/usePhotoStore";
+import Link from "next/link";
 
 const MapComponent = dynamic(() => import("../components/MapComponent"), { ssr: false });
 
 export interface Tab {
   title: string;
-  markers?: { latitude: number; longitude: number; color?: string, city?: string, grabPath?: string, photoPaths?: string[]}[];
+  markers?: {
+    latitude: number;
+    longitude: number;
+    color?: string;
+    city?: string;
+    country?: string;
+    grabPath?: string;
+    photoPaths?: string[];
+  }[];
 }
+
 export default function Home() {
-  const texts = [
-    "Here's some stuff I've been up to.",
-  ];
-  const tabMetadata = [
+
+  const { photoPaths } = usePhotoStore();
+  const [allPhotos, setAllPhotos] = useState<PhotoWithMetadata[]>([]);
+  const [filteredPhotos, setFilteredPhotos] = useState<PhotoWithMetadata[]>([]);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [showTiles, setShowTiles] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  
+  console.log('Photo paths in store:', photoPaths);
+  const tiles = [
     {
-      "title": "Photos",
-      "markers": [
-        // tokyo: 
-        { latitude: 35.6762, longitude: 139.6503, color: "red", grabPath: "trips/japan", city: "Tokyo", country: "JP"},
-        // nyc
-        { latitude: 40.7128, longitude: -74.006, color: "blue", grabPath: "trips/nyc", city: "New York City", country: "USA"},
-        // banff national park
-        { latitude: 51.1784, longitude: -115.5708, color: "green", grabPath: "trips/banff", city: "Banff", country: "CA"},
-        // yosemite national park
-        { latitude: 37.8651, longitude: -119.5383, color: "yellow", grabPath: "trips/yosemite", city: "Yosemite", country: "USA"},
-        // dallas
-        { latitude: 32.7767, longitude: -96.7970, color: "purple", grabPath: "trips/dallas", city: "Dallas", country: "USA"},
-        // ketchikan
-        { latitude: 55.3422, longitude: -131.6461, color: "orange", grabPath: "trips/alaska", city: "Ketchikan", country: "USA"},
-        // mt rainier
-        { latitude: 46.8523, longitude: -121.7603, color: "pink", grabPath: "trips/rainier", city: "Mount Rainier", country: "USA"},
-        // austin
-        { latitude: 30.2672, longitude: -97.7431, color: "cyan", grabPath: "trips/austin", city: "Austin", country: "USA"},
-      ]
+      title: "Photos",
+      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/nyc/_DSF0925.jpeg",
+      link: "/photos"
     },
     {
-      "title": "Hikes",
+      title: "Projects",
+      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/nyc/_DSF0583.JPG",
+      link: "/projects"
+    },
+    {
+      title: "Blog",
+      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/yosemite/0716414_0716414-R1-011-4.jpg",
+      link: "/blog"
+    },
+    {
+      title: "About me",
+      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/alaska/0722766_0722766-R2-057-27.jpg",
+      link: "/sriabhi"
     }
   ]
 
-  const [textIndex, setTextIndex] = useState(0);
-  const [fadeState, setFadeState] = useState<"fade-in" | "fade-out">("fade-in");
-  const [showMap, setShowMap] = useState(false);
-  const [moveUp, setMoveUp] = useState(false);
-  const [tabs, setTabs] = useState<Tab[]>(tabMetadata);
-  const [currTab, setCurrTab] = useState<Tab | null>(null);
-
-
   useEffect(() => {
-    async function populatePhotoPaths() {
-      const updatedTabs = await Promise.all(
-        tabs.map(async (tab) => {
-          if (!tab.markers) return tab;
-
-          const updatedMarkers = await Promise.all(
-            tab.markers.map(async (marker) => {
-              if (!marker.grabPath) return marker;
-
-              try {
-                const res = await fetch(`/api/get-photo-urls?subfolder=${encodeURIComponent(marker.grabPath)}`);
-                if (!res.ok) throw new Error(`Failed to fetch photos for ${marker.grabPath}`);
-                const photoPaths: string[] = await res.json();
-
-                // Take only the first 5 photos
-                return { ...marker, photoPaths: photoPaths.slice(0, 5) };
-              } catch (err) {
-                console.error(err);
-                return { ...marker, photoPaths: [] };
-              }
-            })
-          );
-
-          return { ...tab, markers: updatedMarkers };
-        })
-      );
-
-      setTabs(updatedTabs);
-      setCurrTab(updatedTabs[0] || null); // set first tab immediately
+    // Check if image is already loaded (cached)
+    if (imgRef.current?.complete) {
+      setImageLoaded(true);
     }
+    
+    // Fallback timer in case onLoad doesn't fire
+    const fallbackTimer = setTimeout(() => {
+      setImageLoaded(true);
+    }, 100);
 
-    populatePhotoPaths();
+    return () => clearTimeout(fallbackTimer);
   }, []);
-
 
   useEffect(() => {
-    // Instantly move text up and show the map
-    setTimeout(() => {
-      setMoveUp(true);
-      setShowMap(true);
-    }, 250);
-  }, []);
+    if (imageLoaded) {
+      // Start showing tiles after image has faded in
+      const timer = setTimeout(() => setShowTiles(true), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [imageLoaded]);
 
   return (
-    <div className="relative bg-black text-white min-h-screen w-screen">
-      {/* --- Fixed Header --- */}
-      <header className="fixed top-0 left-0 w-full z-50 bg-transparent flex justify-start items-center py-3 px-6">
-        <h1 className="text-lg sm:text-xl font-sans text-white tracking-wide">
-          Oshalabs
-        </h1>
-      </header>
+    <div className="flex min-h-screen flex-col relative bg-[#F4F2F3]">
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[length:4px_4px] mix-blend-overlay"></div>
 
-      {/* --- Hero Section (Text + Map) --- */}
-      <div className="relative h-screen w-full flex flex-col items-center justify-center">
-        {/* Map container */}
-        <div
-          className={`absolute inset-0 transition-opacity duration-1000 flex flex-col items-center justify-center ${
-            showMap ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+      <div className="h-screen flex flex-col justify-center items-center overflow-x-hidden">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-5 
+          w-full
+          px-5 
+          flex-grow"
         >
-          <MapComponent
-             markers={currTab?.markers}
+          <img 
+            ref={imgRef}
+            src="https://home.sriabhi.com/api/v1/photo/trips/rainier/_DSF0746.JPG"
+            className={`rounded-lg object-cover w-auto h-auto max-h-[400px] md:max-h-[500px] 
+              transition-all duration-1000 ease-out
+              ${imageLoaded ? 'opacity-100 translate-y-0 blur-0 [transition-duration:2000ms]' 
+                  : 'opacity-0 translate-y-4 blur-sm'}
+            `}
+            onLoad={() => setImageLoaded(true)}
           />
+
+          <div className="grid grid-rows-2 grid-cols-2 gap-5 w-fit">
+            {tiles.map((tile, index) => (
+              <Link
+                key={index}
+                href={tile.link}
+                className={`
+                  relative 
+                  aspect-square 
+                  rounded-lg 
+                  overflow-hidden 
+                  cursor-pointer 
+                  transform 
+                  transition-all
+                  duration-800
+                  ease-out
+                  hover:scale-105 
+                  p-3 
+                  flex 
+                  flex-col 
+                  justify-end
+                  w-[140px]
+                  md:w-[180px]
+                  ${showTiles ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
+                `}
+                style={{
+                  backgroundImage: tile.bg_img ? `url(${tile.bg_img})` : undefined,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  transitionDelay: showTiles ? `${index * 100}ms` : '0ms',
+                }}
+              >
+                <div className="absolute inset-0 bg-black/40" />
+
+                <h2 className="relative text-lg font-serif-custom text-white font-bold">
+                  {tile.title}
+                </h2>
+              </Link>
+            ))}
+          </div>
         </div>
 
+        <div className="w-full flex justify-between items-end p-5">
+          <div className="flex flex-col">
+            <Link href="/" className="hover:cursor-pointer">
+              <p className="text-md font-inter font-light text-black">New York, NY</p>
+              <h1 className="text-6xl font-serif-custom text-black">
+                <span className="text-xl">sri</span> 
+                Abhi 
+                <span className="text-xl">nandan</span> 
+                Venkat 
+                <span className="text-xl">araman</span>
+              </h1>
+            </Link>
+            <h2 className="text-lg font-inter font-light text-black">
+              I'm a software engineer from <span className="font-bold text-[#500000]">Texas</span> who loves photography, hiking, football, and building cool things.
+            </h2>
+          </div>
 
-        {/* Text overlay */}
-        <div
-          className={`absolute z-10 text-center transition-all duration-1000 ease-in-out ${
-            moveUp
-              ? "top-[5vh] scale-90"
-              : "top-1/2 -translate-y-1/2 scale-100"
-          }`}
-        >
-          {!showMap && ( <h1 className="text-3xl sm:text-4xl md:text-5xl font-sans mb-3"> This is lowk for my server, but </h1> )}
-          <h2
-            className={`text-lg sm:text-xl md:text-3xl font-light font-sans transition-opacity duration-1000 ${
-              fadeState === "fade-in" ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            {texts[textIndex] || "Here's some stuff I've been up to."}
-          </h2>
-          {/* Create tab list of photos */}
-          {showMap && (
-
-            <div className="mt-6 flex space-x-4 justify-center">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.title}
-                  className={`px-4 py-2 rounded-xl border ${
-                    currTab?.title === tab.title
-                      ? "bg-white text-black border-white"
-                      : "bg-transparent text-white border-gray-400 hover:border-white"
-                  } transition-colors duration-300`}
-                  onClick={() =>
-                    // set curr tab to the tab in tabs if it's not already selected, else set to null
-                    setCurrTab(tab)
-                  }
-                >
-                  {tab.title}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Only show links on medium screens and up */}
+          <div className="hidden md:flex items-end space-x-3">
+            <Link href="https://google.com">
+              <div className="relative group cursor-pointer font-inter">
+                resume
+                <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-black transition-all duration-300 group-hover:w-full"></span>
+              </div>
+            </Link>
+            <Link href="https://github.com/sriabhivenkat">
+              <div className="relative group cursor-pointer font-inter">
+                github
+                <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-black transition-all duration-300 group-hover:w-full"></span>
+              </div>
+            </Link>
+            <Link href="https://www.linkedin.com/in/sriabhi-venkat/">
+              <div className="relative group cursor-pointer font-inter">
+                linkedin
+                <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-black transition-all duration-300 group-hover:w-full"></span>
+              </div>
+            </Link>
+          </div>
         </div>
       </div>
-
-      {/* --- Next Section --- */}
-      <section className="w-full min-h-[600px] bg-black flex items-center justify-center border-t border-gray-800">
-        <p className="text-gray-400 text-center">More sections coming soon...</p>
-      </section>
     </div>
   );
 }

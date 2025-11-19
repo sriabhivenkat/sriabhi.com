@@ -3,7 +3,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #F4F2F3;
 }
 
 
@@ -26,7 +26,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #F4F2F3;
     --foreground: #ededed;
   }
 }
@@ -36,3 +36,9 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), ui-sans-serif, system-ui;
 }
+
+/* Serif font utility class */
+.font-serif-custom {
+  font-family: var(--font-ins-serif), serif;
+}
+

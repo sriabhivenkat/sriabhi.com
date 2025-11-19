@@ -6,6 +6,7 @@ import Map from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Marker, Popup } from "react-map-gl/mapbox";
 import Pin from "./Pin";
+import { PhotoWithMetadata } from "../../hooks/usePhotoStore";
 
 // const accessToken = process.env.AUTH_TOKEN_MAPBOX_TOKEN!; // prod
 const accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN! // dev
@@ -16,7 +17,7 @@ interface MarkerType {
   city?: string;
   country?: string;
   grabPath?: string;
-  photoPaths?: string[];
+  photoPaths?: PhotoWithMetadata[];
 }
 
 interface MapComponentProps {
@@ -76,13 +77,13 @@ export default function MapComponent({ markers = [] }: MapComponentProps) {
             {/* Photo grid */}
             <div className="grid grid-cols-2 gap-2 scrollbar-hidden max-h-48 overflow-y-auto">
               {popupInfo.photoPaths
-                ?.slice(0, 20) // ✅ only first 5 photos
+                ?.slice(0, 8)
                 .map((path, idx) => (
                   <img
                     key={idx}
-                    src={path}
+                    src={path.url}
                     alt={`photo ${idx}`}
-                    className="w-full h-24 object-cover rounded-md"
+                    className="w-full h-24 object-cover rounded-md sm:cursor-pointer sm:hover:scale-105 sm:transform sm:transition sm:duration-300"
                   />
                 ))}
             </div>
@@ -90,7 +91,7 @@ export default function MapComponent({ markers = [] }: MapComponentProps) {
             {/* Show count if there are more */}
             {popupInfo.photoPaths && popupInfo.photoPaths.length > 20 ? (
               <p className="text-xs text-gray-500 mt-2">
-                +{popupInfo.photoPaths.length - 20} more photos. View more <a>here.</a>
+                +{popupInfo.photoPaths.length - 8} more photos. View more <a>here.</a>
               </p>
             ) : (
               <p className="text-xs text-gray-500 mt-2">

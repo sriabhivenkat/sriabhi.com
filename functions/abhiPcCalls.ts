@@ -1,7 +1,8 @@
+import { PhotoWithMetadata } from "../hooks/usePhotoStore";
 
 const baseUrl = process.env.NODE_ENV === 'development'
   ? 'http://localhost:8080'
-  : 'http://oshawott-main-api:8000';
+  : 'https://home.sriabhi.com';
 
 export async function getAccessToken() {
     const res = await fetch(`${baseUrl}/api/v1/request_access_token`, {
@@ -11,8 +12,10 @@ export async function getAccessToken() {
           Accept: 'application/json',
         },
         body: JSON.stringify({
-            username: process.env.AUTH_TOKEN_USER,
-            password: process.env.AUTH_TOKEN_PASS,
+            // username: process.env.AUTH_TOKEN_USER,
+            // password: process.env.AUTH_TOKEN_PASS,
+            username:"AbhiVenkat2002$",
+            password:"#SoggyApples1496$",
         }),
       });
 
@@ -119,11 +122,8 @@ export async function exchangePublicToken(public_token: string) {
 /**
  * Fetches photo URLs for a given subfolder path.
  */
-export async function getPhotoUrls(subfolder: string) {
+export async function getPhotoUrls(subfolder: string, token: string): Promise<PhotoWithMetadata[]> {
   try {
-    const { access_token: token } = await getAccessToken();
-    // console.log('Fetching photos with token:', token);
-
     const resp = await fetch(
       `${baseUrl}/api/v1/list_photos?subfolder=${encodeURIComponent(subfolder)}`,
       {
@@ -135,18 +135,22 @@ export async function getPhotoUrls(subfolder: string) {
 
     if (!resp.ok) throw new Error(`Failed to fetch photos for ${subfolder}`);
 
-    const files: string[] = await resp.json();
+    const files = await resp.json();
 
-    const photoPaths = files.map(
-      (file) => `https://home.sriabhi.com${file}`
-    );
-    // console.log('Fetched photo paths:', photoPaths);
+    // Convert backend response → frontend-friendly structure
+    const formatted: PhotoWithMetadata[] = files.map((file: any) => ({
+      url: `${baseUrl}/${file.file_url}`,
+      metadata: file.metadata || null,
+    }));
 
-    return photoPaths;
+    console.log(`Fetched photo metadata for ${subfolder}:`, formatted);
+
+    return formatted;
   } catch (err) {
     console.error(`Error fetching photos for ${subfolder}:`, err);
     return [];
   }
 }
+
 
     
