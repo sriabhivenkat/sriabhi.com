@@ -157,24 +157,27 @@ export default function Home() {
 
           {/* Only show links on medium screens and up */}
           <div className="hidden md:flex items-end space-x-3">
-            <Link href="https://google.com">
-              <div className="relative group cursor-pointer font-inter">
-                resume
-                <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-black transition-all duration-300 group-hover:w-full"></span>
-              </div>
-            </Link>
-            <Link href="https://github.com/sriabhivenkat">
-              <div className="relative group cursor-pointer font-inter">
-                github
-                <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-black transition-all duration-300 group-hover:w-full"></span>
-              </div>
-            </Link>
-            <Link href="https://www.linkedin.com/in/sriabhi-venkat/">
-              <div className="relative group cursor-pointer font-inter">
-                linkedin
-                <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-black transition-all duration-300 group-hover:w-full"></span>
-              </div>
-            </Link>
+            {["resume", "github", "linkedin"].map((label, i) => {
+              const hrefs: Record<string, string> = {
+                resume: "https://home.sriabhi.com/api/v1/files/blog/sriabhinandan_venkataraman_resume_final.pdf",
+                github: "https://github.com/sriabhivenkat",
+                linkedin: "https://www.linkedin.com/in/sriabhi-venkat/",
+              };
+              return (
+                <Link key={label} href={hrefs[label]}>
+                  <div
+                    className={`relative group cursor-pointer font-inter text-black transform transition-all duration-800 ease-out
+                      ${showTiles ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    style={{ transitionDelay: showTiles ? `${i * 100}ms` : '0ms' }}
+                  >
+                    <p className="text-black">
+                      {label}
+                    </p>
+                    <span className="absolute left-0 -bottom-1 w-0 h-[3px] bg-black transition-all duration-300 group-hover:w-full"></span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

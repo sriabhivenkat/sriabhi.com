@@ -13,61 +13,69 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [selectedTag, setSelectedTag] = useState<string>("");
+  const [coverPhoto, setCoverPhoto] = useState<File | null>(null);
+  const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
 
-const handleSubmit = async () => {
-  if (!title || !content) {
-    alert("Please provide both a title and content.");
-    return;
-  }
 
-  setLoading(true);
-  setSuccessMessage("");
-
-  try {
-    const formData = new FormData();
-
-    // Convert markdown content to a Blob and append as a file
-    const markdownBlob = new Blob([content], { type: "text/markdown" });
-    const filename = title.replace(/\s+/g, "_") + ".md"; // replace spaces with underscores
-    formData.append("files", markdownBlob, filename);
-
-    // Optional additional fields
-    formData.append("title", title);
-    formData.append("subtitle", subtitle);
-    formData.append("tags", selectedTag);
-    formData.append("word_count", content.trim().split(/\s+/).length.toString());
-
-    // Specify the subfolder path if desired
-    formData.append("path", "blog");
-    const {access_token} = await getAccessToken();
-    const res = await fetch("https://home.sriabhi.com/api/v1/upload_files", {
-      method: "POST",
-      body: formData, // do NOT set Content-Type manually; browser sets boundary
-      headers: {
-        "Authorization": `Bearer ${access_token}` // <-- include JWT here
-      },
-      credentials: "include", // if you need cookies sent as well
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      setSuccessMessage(`Blog uploaded successfully!`);
-      setTitle("");
-      setSubtitle("");
-      setContent("");
-      setSelectedTag("");
-      console.log("Uploaded files:", data.files_uploaded);
-    } else {
-      alert(data.error || "Failed to upload blog.");
+  const handleSubmit = async () => {
+    if (!title || !content) {
+      alert("Please provide both a title and content.");
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    alert("Failed to upload blog.");
-  }
 
-  setLoading(false);
-};
+    setLoading(true);
+    setSuccessMessage("");
+
+    try {
+      const formData = new FormData();
+
+      // Convert markdown content to a Blob
+      const markdownBlob = new Blob([content], { type: "text/markdown" });
+      const filename = title.replace(/\s+/g, "_") + ".md";
+      formData.append("files", markdownBlob, filename);
+
+      // Add cover photo if selected
+      if (coverPhoto) {
+        formData.append("cover_photo", coverPhoto, coverPhoto.name);
+      }
+
+      // Metadata
+      formData.append("title", title);
+      formData.append("subtitle", subtitle);
+      formData.append("tags", selectedTag);
+      formData.append("word_count", content.trim().split(/\s+/).length.toString());
+      formData.append("path", "blog");
+
+      const { access_token } = await getAccessToken();
+
+      const res = await fetch("https://home.sriabhi.com/api/v1/upload_files", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setSuccessMessage(`Blog uploaded successfully!`);
+        setTitle("");
+        setSubtitle("");
+        setContent("");
+        setSelectedTag("");
+        setCoverPhoto(null);
+      } else {
+        alert(data.error || "Failed to upload blog.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to upload blog.");
+    }
+
+    setLoading(false);
+  };
 
     const [readingTime, setReadingTime] = useState(0);
     const lastLengthRef = useRef(0);
@@ -129,6 +137,18 @@ useEffect(() => {
             onChange={(e) => setSubtitle(e.target.value)}
             className="w-full p-3 mb-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
           />
+          <input 
+            type="file"
+            accept="image/*"
+            className="w-full p-3 mb-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-500"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setCoverPhoto(file);
+                setCoverPhotoPreview(URL.createObjectURL(file));
+              }
+            }}
+          />
           <div className="w-full mb-2 flex flex-col ml-1">
             <p className="mb-2 text-sm text-black">Tags</p>
             <div className="flex gap-x-2">
@@ -154,7 +174,7 @@ useEffect(() => {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write your blog post in Markdown..."
-            className="flex-1 p-3 text-black rounded-lg border border-gray-300 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="flex-1 p-3 text-black rounded-lg border border-gray-300 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 max-h-[90vh] overflow-y-auto"
           />
           <button
             onClick={handleSubmit}
@@ -169,11 +189,18 @@ useEffect(() => {
         </div>
 
         {/* Markdown preview */}
-        <div className="w-1/2 p-5 border border-gray-300 rounded-lg bg-white overflow-auto">
+        <div className="w-1/2 p-5 border border-gray-300 rounded-lg bg-white max-h-[90vh] overflow-y-auto">
             {title || content ? (
                 <div>
                     {title && (
                         <div className="mb-4 border-b-1 border-gray-400">
+                            {coverPhotoPreview && (
+                              <img
+                                src={coverPhotoPreview}
+                                className="w-full max-h-96 object-cover rounded-lg mb-4"
+                                alt="Cover preview"
+                              />
+                            )}
                             <h1 className="text-4xl font-bold font-serif-custom text-black">{title}</h1>
                             <h3 className="text-lg font-serif-custom text-gray-600 mb-2">{subtitle}</h3>
                             <p className="font-serif-custom text-gray-600 mb-3">{new Date().toLocaleDateString()} ● {readingTime} min read</p>
@@ -201,12 +228,13 @@ useEffect(() => {
                                 th: ({node, ...props}) => <th className="border border-gray-300 px-4 py-2 text-left font-bold" {...props} />,
                                 td: ({node, ...props}) => <td className="border border-gray-300 px-4 py-2" {...props} />,
                                 img: ({node, ...props}) => (
-                                    <img 
-                                        className="max-w-full h-auto rounded-lg my-4" 
-                                        {...props} 
-                                        alt={props.alt || 'Image'}
-                                    />
-                                ),
+                                  <img 
+                                    className="max-w-full max-h-96 rounded-lg my-4 mx-auto block" 
+                                    {...props} 
+                                    alt={props.alt || 'Image'}
+                                  />
+                                )
+
                             }}
                         >
                             {content}

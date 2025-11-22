@@ -139,7 +139,7 @@ export async function getPhotoUrls(subfolder: string, token: string): Promise<Ph
 
     // Convert backend response → frontend-friendly structure
     const formatted: PhotoWithMetadata[] = files.map((file: any) => ({
-      url: `${baseUrl}/${file.file_url}`,
+      url: file.file_url[0] == "/" ? `${baseUrl}${file.file_url}` : `${baseUrl}/${file.file_url}`,
       metadata: file.metadata || null,
     }));
 
