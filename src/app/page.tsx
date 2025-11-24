@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Navbar from "@/components/Navbar";
 import { PhotoWithMetadata, usePhotoStore } from "../../hooks/usePhotoStore";
 import Link from "next/link";
+import Image from "next/image";
 
 const MapComponent = dynamic(() => import("../components/MapComponent"), { ssr: false });
 
@@ -34,22 +35,22 @@ export default function Home() {
   const tiles = [
     {
       title: "Photos",
-      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/nyc/_DSF0925.jpeg",
+      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/nyc/_DSF0925_thumb.jpg",
       link: "/photos"
     },
     {
       title: "Projects",
-      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/nyc/_DSF0583.JPG",
+      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/nyc/_DSF0583_thumb.jpg",
       link: "/projects"
     },
     {
       title: "Blog",
-      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/yosemite/0716414_0716414-R1-011-4.jpg",
+      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/yosemite/0716414_0716414-R1-011-4_thumb.jpg",
       link: "/blog"
     },
     {
       title: "About me",
-      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/alaska/0722766_0722766-R2-057-27.jpg",
+      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/alaska/0722766_0722766-R2-057-27_thumb.jpg",
       link: "/sriabhi"
     }
   ]
@@ -86,9 +87,12 @@ export default function Home() {
           px-5 
           flex-grow"
         >
-          <img 
+          <Image 
             ref={imgRef}
             src="https://home.sriabhi.com/api/v1/photo/trips/rainier/_DSF0746.JPG"
+            width={600}
+            height={500}
+            alt=""
             className={`rounded-lg object-cover w-auto h-auto max-h-[400px] md:max-h-[500px] 
               transition-all duration-1000 ease-out
               ${imageLoaded ? 'opacity-100 translate-y-0 blur-0 [transition-duration:2000ms]' 

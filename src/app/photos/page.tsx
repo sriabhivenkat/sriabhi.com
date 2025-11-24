@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 import Navbar from '@/components/Navbar';
 import { PhotoWithMetadata, usePhotoStore } from '../../../hooks/usePhotoStore';
+import Image from 'next/image';
+import PhotoCard from '@/components/PhotoCard';
 
 export default function Page() {
   const { photoPaths } = usePhotoStore();
@@ -153,54 +155,7 @@ export default function Page() {
         {/* Photos grid */}
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPhotos.slice(0, visibleCount).map((photo, index) => (
-            <div key={index} className="p-2 flex flex-col">
-              <img
-                src={photo.url}
-                alt={`Photo ${index + 1}`}
-                className="rounded-lg overflow-hidden shadow-lg hover:scale-105 transform transition duration-300 object-cover cursor-pointer"
-              />
-              <div className="mt-2 flex justify-between items-center">
-                <h2 className="text-2xl font-serif-custom font-black mb-1 text-black">{photo.location || "Unknown Location"}</h2>
-                <p className="text-xl font-serif-custom font-bold mb-1 text-right text-black">
-                  {photo.metadata?.date_taken ? new Date(photo.metadata.date_taken).toLocaleString('en-US', {
-                    hour: 'numeric', minute: 'numeric', hour12: true,
-                    month: '2-digit', day: '2-digit', year: 'numeric',
-                  }) : ""}
-                </p>
-              </div>
-
-              {/* Horizontal metadata pills */}
-              <div className='w-full rounded-md mt-1 flex flex-wrap overflow-x-auto gap-2 py-1 scrollbar-hidden'>
-                {photo.metadata?.model && (
-                  <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-                    <p className="text-white text-sm font-light">{photo.metadata.model}</p>
-                  </div>
-                )}
-                {photo.metadata?.film && (
-                  <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-                    <p className="text-white text-sm font-light">35mm Kodak Gold 200</p>
-                  </div>
-                )}
-                {photo.metadata?.aperture && (
-                  <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-                    <p className="text-white text-sm font-light">{photo.metadata.aperture}</p>
-                  </div>
-                )}
-                {photo.metadata?.shutter_speed && (
-                  <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-                    <p className="text-white text-sm font-light">1/{photo.metadata.shutter_speed}s</p>
-                  </div>
-                )}
-                {photo.metadata?.iso && (
-                  <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-                    <p className="text-white text-sm font-light">
-                      ISO <strong>{photo.metadata.iso}</strong> - {getLightSensitivityMessage(photo.metadata.iso)}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-            </div>
+            <PhotoCard photo={photo} key={index} index={index} />
           ))}
         </div>
       </div>

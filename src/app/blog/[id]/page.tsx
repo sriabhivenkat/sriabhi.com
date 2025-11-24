@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import Navbar from "@/components/Navbar";
 import { getAccessToken } from "../../../../functions/abhiPcCalls";
 import remarkGfm from 'remark-gfm'
+import Image from "next/image";
 
 interface Post {
   file_url: string;
@@ -21,6 +22,7 @@ export default function Page(props: { params: Promise<{ id: string }> }) {
   const [content, setContent] = useState<string>("");
   const [post, setPost] = useState<Post>();
   const [token, setToken] = useState<string>("");
+  const [loaded, setLoaded] = useState(false);
 
   // Fetch token + list of posts
   useEffect(() => {
@@ -74,11 +76,18 @@ export default function Page(props: { params: Promise<{ id: string }> }) {
       <Navbar />
       <div className="flex flex-col items-center w-full max-w-4xl">
         <div className="w-full flex flex-col items-center mb-5">
-            <img
-                src={post?.cover_photo}
-                className="w-full max-h-96 object-cover rounded-lg mb-4"
-                alt="Cover preview"
-            />
+            {post?.cover_photo && (
+              <Image
+                  src={post.cover_photo}
+                  className={`w-full max-h-96 object-cover rounded-lg mb-4 bg-gray-300 ${!loaded && "animate-pulse"}`}
+                  alt="Cover preview"
+                  placeholder="blur"
+                  blurDataURL={post.cover_photo}
+                  width={600}
+                  height={500}
+                  onLoad={() => setLoaded(true)}
+              />
+            )}
             <h1 className="text-3xl md:text-5xl font-serif-custom text-black font-black">
                 {post?.title}
             </h1>
@@ -117,18 +126,16 @@ export default function Page(props: { params: Promise<{ id: string }> }) {
                     th: ({node, ...props}) => <th className="border border-gray-300 px-4 py-2 text-left font-bold" {...props} />,
                     td: ({node, ...props}) => <td className="border border-gray-300 px-4 py-2" {...props} />,
                     img: ({node, ...props}) => (
-                        <div className="w-full flex justify-center my-4">
-                            <img
-                                {...props}
-                                alt={props.alt || "image"}
-                                className="
-                                    w-full          /* default: mobile = 100% width */
-                                    md:w-1/2        /* medium+ screens = 50% width */
-                                    h-auto 
-                                    rounded-lg
-                                "
-                            />
-                        </div>
+                        <Image
+                          className="max-w-full max-h-96 rounded-lg my-4 mx-auto block" 
+                          {...props}
+                          height={400}
+                          width={500}
+                          placeholder="blur"
+                          blurDataURL={props.src}
+                          alt={'Image'}
+                          src={props.src || ""}
+                        />
                     ),
 
                 }}

@@ -1,8 +1,10 @@
 import { PhotoWithMetadata } from "../hooks/usePhotoStore";
 
-const baseUrl = process.env.NODE_ENV === 'development'
-  ? 'http://localhost:8080'
-  : 'https://home.sriabhi.com';
+// const baseUrl = process.env.NODE_ENV === 'development'
+//   ? 'http://localhost:8080'
+//   : 'https://home.sriabhi.com';
+
+const baseUrl = "https://home.sriabhi.com"
 
 export async function getAccessToken() {
     const res = await fetch(`${baseUrl}/api/v1/request_access_token`, {

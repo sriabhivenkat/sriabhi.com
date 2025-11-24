@@ -69,7 +69,7 @@ export default function Page() {
                     href={`/blog/${posts[0]?.id}`}
                 >
                     {/* This div pushes content to bottom */}
-                    <div className="mt-auto bg-black/20 p-4 flex items-end justify-between rounded-lg">
+                    <div className="mt-auto p-4 flex items-end justify-between rounded-lg">
                         <div className='flex flex-col'>
                             <h1 className="text-4xl lg:text-5xl font-serif-custom text-white text-left">
                                 {posts[0]?.title}

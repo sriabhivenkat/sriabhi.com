@@ -6,9 +6,38 @@
   --foreground: #F4F2F3;
 }
 
-
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari, and Opera */
+  .animate-shimmer {
+    animation: shimmer 1.8s infinite linear;
+  }
+  @keyframes flash-expand {
+    0% { opacity: 1; transform: scale(0.2); }
+    50% { opacity: 0.9; transform: scale(3); }
+    100% { opacity: 0; transform: scale(5); }
+  }
+  .animate-flash-expand {
+    animation: flash-expand 0.25s ease-out forwards;
+  }
+
+  @keyframes pokeball-shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-15deg); }
+    50% { transform: rotate(15deg); }
+    75% { transform: rotate(-10deg); }
+  }
+  .animate-pokeball-shake {
+    animation: pokeball-shake 0.8s ease-in-out forwards;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
   .scrollbar-hidden::-webkit-scrollbar {
     display: none;
   }
