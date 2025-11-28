@@ -1,13 +1,14 @@
 "use client"
 import React, { useEffect, useState } from 'react';
-import Navbar from '@/components/Navbar';
 import PokeballReveal from '@/components/PokeballReveal';
+import Navbar from '@/components/Navbar';
+import Image from 'next/image';
 
 export default function Page() {
     const containerInfo = {
         "default": {
-            "title": "My Homelab server!",
-            "description": "I have 6 containers, named after my favorite Pokémon! Tap on any of them to learn more. There's a lot of cool things they all do. They manage my finances, store my photos, and store blog posts. I have a lot of plans for the server. I have 4 main domains: sriabhi.com, home.sriabhi.com, nova.sriabhi.com, and mc.sriabhi.com (my minecraft server!). I have a lot of cool ideas for the server. I wanted to build my own PlexAmp server to manage my music, and maybe add a basic scripting language that will let me mix my music, instead of haivng to learn any of the existing software."
+            "title": "My Home Lab Server",
+            "description": "Instead of using my PC to game, I've binded my PC's public IP to sriabhi.com, allowing me to set up a one stop shop for all things Abhi. From photo storage to financial analysis, sriabhi.com is the central repository for everything I enjoy doing. Click on individual Pokéballs to read more about the 6 microservices that make up sriabhi.com"
         },
         "oshawott": {
             "title": "Oshawott",
@@ -40,21 +41,35 @@ export default function Page() {
     const [selectedHealth, setSelectedHealth] = useState("all");
 
     const otherProjects = [
+        {   
+            title: "Streamlining Form Submissions with Garchomp",
+            description: "Creating scalable MCP servers and flexible LLM clients to automate ticket inquiry and submission for JP Morgan Wealth Management",
+            photoUrl: "/images/garchomp.png",
+            date: "2025"
+        },
         {
-            title: "The REACH Project",
-            description: "An app that crossed Slack, Canvas, and WhatsApp to create a central hub for a nonprofit that aimed to help people get access to benefits taken away from them by the state of Texas."
+            title: "Filling in the gaps with AI generated photos at Walmart Global Tech",
+            description: "How I used pixel density heatmaps to autolabel AI generated photos, cleaning up datasets with holes",
+            photoUrl: "/images/wdc.png",
+            date: "2023"
         },
         {   
             title: "Pixlist",
-            description: "A fun photo sharing app that allowed for groups of friends to challenge each other to do fun dares and pass it on to another person in the app."
+            description: "An app I built to authentically involved with the minutiae of my friends' life",
+            photoUrl: "/images/pixlist.png",
+            date: "2022"
         },
-        {   
-            title: "Plaza",
-            description: "A React webapp for researchers to get paid for the papers they published and those interested in reading papers to get easy and free access to research papers."
+        {
+            title: "What does ultra-specific messaging look like at scale?",
+            description: "A team and I deep dive into finding the perfect balance between Slack, Remind, WhatsApp and Canvas for The Reach Project.",
+            photoUrl: "/images/reachproject.png",
+            date: "2021-2022"
         },
         {
             title: "Bite Party",
-            description: "A fun app groups of friends could use to find nearby restaurants they all wanted to eat using a Tinder-like swiping functionality!"
+            description: "A fun app groups of friends could use to find nearby restaurants they all wanted to eat using a Tinder-like swiping functionality!",
+            photoUrl: "/images/bp.png",
+            date: "2020-2021"
         }
     ]
     useEffect(() => {
@@ -97,20 +112,19 @@ export default function Page() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col p-5 overflow-hidden bg-[#F4F2F3]">
+        <div className="min-h-screen flex flex-col p-3 bg-[#F4F2F3]">
             {/* Header */}
+            <Navbar />
+            <div className="mt-12 lg:mt-10 flex flex-col flex-1">
             <div className="flex flex-col items-start justify-center mb-5">
-                <h1 className="text-6xl font-serif-custom font-black text-black">Projects</h1>
-                <p className="mt-2 text-sm font-inter font-light text-black max-w-130">
-                    i sorta try to build things that solve problems in my life, because i lead an extremely difficult life (sarcasm)
-                </p>
+                <h1 className="text-5xl font-serif-custom font-black text-black">Projects</h1>
             </div>
 
             {/* MAIN CONTENT AREA */}
             <div className="flex flex-col">
                 <div className="
-                    w-full min-h-72 bg-[#F4F2F3] rounded-lg shadow-md border border-gray-200
-                    grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 p-5 flex items-center
+                    w-full lg:w-3/4 min-h-72 bg-[#F4F2F3] rounded-lg shadow-md border border-gray-200
+                    grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 p-5 flex items-center self-center
                 ">
                     {/* LEFT: POKEMON GRID */}
                     <div className="
@@ -130,7 +144,8 @@ export default function Page() {
 
                     {/* RIGHT: Info section */}
                     <div className="p-4">
-                        <h1 className="text-2xl text-black font-serif-custom font-bold mb-3">sriabhi.com</h1>
+                        <p className="text-gray-400 text-xs mb-1 font-bold">FEATURED | 2025</p>
+                        <h1 className="text-2xl text-black font-serif-custom font-bold mb-1">sriabhi.com</h1>
                         <h2 className="text-lg text-black font-inter font-bold mb-1">{selectedContainer.title}</h2>
                         <div className="flex items-center max-h-16 max-w-28 p-1 rounded text-black text-sm border border-gray-400 mb-1">
                             <div className={`h-3 w-3 mr-1 rounded-full ${containerHealths[selectedHealth] === "running" ? "bg-green-600" : "bg-red-600"}`}/>
@@ -139,17 +154,28 @@ export default function Page() {
                         <p className="text-sm text-gray-600 leading-relaxed">{selectedContainer.description}</p>
                     </div>
                 </div>
-                <div className="flex flex-col lg:flex-row mt-5 space-x-1 space-y-2">
-                    {otherProjects.map((project, index) => (
-                        <div className='rounded-lg shadow-md border border-gray-200 p-5' key={index}>
-                            <h1 className="text-black text-2xl font-serif-custom font-bold mb-3">{project.title}</h1>
-                            <p className="text-gray-600 text-sm leading-relaxed">{project.description}</p>
+                    <div className="flex flex-col items-center mt-10">
+                        <div className='lg:w-3/4 space-y-2'>
+                            {otherProjects.map((project, index) => (
+                                <div className="p-1 flex flex-col lg:flex-row justify-center items-center space-x-4 hover:cursor-pointer" key={index}>
+                                    <div className='lg:max-w-1/3 self-center'>
+                                        <p className="text-gray-400 text-xs mb-1 font-bold">{project?.date}</p>
+                                        <h1 className="text-black text-2xl font-serif-custom font-bold mb-1">{project.title}</h1>
+                                        <p className="text-gray-600 text-sm leading-relaxed">{project.description}</p>
+                                    </div>
+                                    <Image 
+                                        src={project.photoUrl}
+                                        alt="alt-text"
+                                        className='bg-cover lg:max-w-1/2 mt-2 rounded-md transform transition duration-400 ease-in-out hover:scale-105'
+                                        width={400}
+                                        height={500}
+                                    />
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    </div>
                 </div>
             </div>
-
-            <Navbar />
         </div>
     );
 }

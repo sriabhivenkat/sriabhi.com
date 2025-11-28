@@ -49,10 +49,10 @@ export default function PhotoCard({ photo, index }: { photo: PhotoWithMetadata; 
       </div>
 
       {/* Pills */}
-      <div className="w-full rounded-md mt-1 flex flex-wrap overflow-x-auto gap-2 py-1 scrollbar-hidden">
+      <div className="w-full rounded-md flex flex-wrap overflow-x-auto gap-1 scrollbar-hidden">
         {photo.metadata?.model && (
-          <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-            <p className="text-white text-sm font-light">{photo.metadata.model}</p>
+          <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
+            <p className="text-black text-md font-black">{photo.metadata.model} |</p> 
           </div>
         )}
         {photo.metadata?.film && (
@@ -61,21 +61,21 @@ export default function PhotoCard({ photo, index }: { photo: PhotoWithMetadata; 
           </div>
         )}
         {photo.metadata?.aperture && (
-          <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-            <p className="text-white text-sm font-light">{photo.metadata.aperture}</p>
+          <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
+            <p className="text-black text-md"><strong>{photo.metadata.aperture} |</strong></p>
           </div>
         )}
         {photo.metadata?.shutter_speed && (
-          <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-            <p className="text-white text-sm font-light">
-              1/{photo.metadata.shutter_speed}s
+          <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
+            <p className="text-black text-md ">
+              <strong>1/{photo.metadata.shutter_speed}s |</strong>
             </p>
           </div>
         )}
         {photo.metadata?.iso && (
-          <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-            <p className="text-white text-sm font-light">
-              ISO <strong>{photo.metadata.iso}</strong>
+          <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
+             <p className="text-black text-md ">
+              <strong>ISO {photo.metadata.iso}</strong>
             </p>
           </div>
         )}

@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
-import Navbar from "@/components/Navbar";
 import { PhotoWithMetadata, usePhotoStore } from "../../hooks/usePhotoStore";
 import Link from "next/link";
 import Image from "next/image";
@@ -81,7 +80,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col relative bg-[#F4F2F3]">
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[length:4px_4px] mix-blend-overlay"></div>
 
-      <div className="h-screen flex flex-col justify-center items-center overflow-x-hidden">
+      <div className="min-h-screen flex flex-col justify-center items-center overflow-x-hidden">
         <div className="flex flex-col md:flex-row items-center justify-center gap-5 
           w-full
           px-5 
@@ -147,11 +146,8 @@ export default function Home() {
             <Link href="/" className="hover:cursor-pointer">
               <p className="text-md font-inter font-light text-black">New York, NY</p>
               <h1 className="text-6xl font-serif-custom text-black">
-                <span className="text-xl">sri</span> 
                 Abhi 
-                <span className="text-xl">nandan</span> 
-                Venkat 
-                <span className="text-xl">araman</span>
+                Venkat
               </h1>
             </Link>
             <h2 className="text-lg font-inter font-light text-black">

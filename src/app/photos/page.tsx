@@ -1,10 +1,10 @@
 "use client"
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-import Navbar from '@/components/Navbar';
 import { PhotoWithMetadata, usePhotoStore } from '../../../hooks/usePhotoStore';
 import Image from 'next/image';
 import PhotoCard from '@/components/PhotoCard';
+import Navbar from '@/components/Navbar';
 
 export default function Page() {
   const { photoPaths } = usePhotoStore();
@@ -111,17 +111,18 @@ export default function Page() {
   console.log('Raw photo URL from store:', store.photoPaths['trips/nyc']?.[0]?.url)
   return (
     <div className="min-h-screen flex p-3 sm:p-5 overflow-hidden bg-[#F4F2F3]">
-      <div className="w-full p-2 px-5">
+      <Navbar />
+      <div className="mt-12 lg:mt-10 flex flex-col flex-1">
+      <div className="w-full">
         <div className="ml-2 flex flex-col items-start justify-center mb-10">
           <div className="flex w-full justify-between items-center">
-            <h1 className="text-6xl font-serif-custom font-black text-black">Memories</h1>
+            <h1 className="text-5xl font-serif-custom font-black text-black">Memories</h1>
             <p className="mt-1 text-2xl font-serif-custom font-medium text-black">{filteredPhotos.length} photos</p>
           </div>
-          <p className="mt-1 text-md font-inter font-light text-black">I try to keep a record of everywhere I've been!</p>
 
           {/* Filters */}
           <p className='mt-4 mb-2 text-md font-inter text-black'>Filters</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1">
             {uniqueModels.map(model => (
               <button
                 key={model}
@@ -153,13 +154,13 @@ export default function Page() {
         </div>
 
         {/* Photos grid */}
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
           {filteredPhotos.slice(0, visibleCount).map((photo, index) => (
             <PhotoCard photo={photo} key={index} index={index} />
           ))}
         </div>
+        </div>
       </div>
-      <Navbar />
     </div>
   );
 }

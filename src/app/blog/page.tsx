@@ -1,10 +1,10 @@
 "use client"
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-import Navbar from '@/components/Navbar';
 import { PhotoWithMetadata, usePhotoStore } from '../../../hooks/usePhotoStore';
 import { getAccessToken } from '../../../functions/abhiPcCalls';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 
 interface Post {
     md_url: string;
@@ -47,17 +47,13 @@ export default function Page() {
     }, [])
 
     return (
-        <div className="min-h-screen flex flex-col p-5 overflow-hidden bg-[#F4F2F3]">
-            
+        <div className="min-h-screen flex flex-col p-2 py-3 bg-[#F4F2F3]">
+            <Navbar />
+            <div className="mt-12 lg:mt-10 flex flex-col flex-1">
             {/* Header / Title section */}
             <div className="ml-2 flex flex-col items-start justify-center mb-5">
                 <div className="flex w-full justify-between items-center">
-                    <h1 className="text-6xl font-serif-custom font-black text-black">Blog</h1>
-                </div>
-                <div className="max-w-130">
-                <p className="mt-2 text-sm font-inter font-light text-black">
-                    i lowk be sayin wtv here lmao
-                </p>
+                    <h1 className="text-5xl font-serif-custom font-black text-black">Blog</h1>
                 </div>
             </div>
 
@@ -69,7 +65,7 @@ export default function Page() {
                     href={`/blog/${posts[0]?.id}`}
                 >
                     {/* This div pushes content to bottom */}
-                    <div className="mt-auto p-4 flex items-end justify-between rounded-lg">
+                    <div className="mt-2 p-4 flex items-center justify-between rounded-lg">
                         <div className='flex flex-col'>
                             <h1 className="text-4xl lg:text-5xl font-serif-custom text-white text-left">
                                 {posts[0]?.title}
@@ -92,17 +88,17 @@ export default function Page() {
                 {/* Right container (optional) */}
                 <div className="w-full lg:w-1/3">
                     <h1 className="text-4xl font-serif-custom text-black">Other reads</h1>
-                    <div className="h-full flex flex-1 flex-col space-y-5 mt-2">
+                    <div className="h-full flex flex-1 flex-col space-y-3 mt-2 overflow-auto">
                         {posts.slice(1).map((post, index) => (
                             <Link
-                                className="h-48 lg:h-1/3 w-full rounded-md hover:cursor-pointer bg-cover"
+                                className="h-36 lg:h-32 w-full rounded-md hover:cursor-pointer bg-cover"
                                 style={{ backgroundImage: `url(${post.cover_photo})` }}
                                 href={`/blog/${post.id}`}
                                 key={index}
                             >
                                 <div className="mt-auto bg-black/20 p-4 flex flex-col lg:flex-row justify-between h-full rounded-md items-start">
                                     <div className='flex flex-col'>
-                                        <h1 className="text-4xl lg:text-5xl font-serif-custom text-white text-left">
+                                        <h1 className="text-4xl lg:text-3xl font-serif-custom text-white text-left">
                                             {post?.title}
                                         </h1>
                                         <p className="text-md text-white text-left mt-1">
@@ -121,13 +117,9 @@ export default function Page() {
                             </Link>
                         ))}
                     </div>
+                    </div>
                 </div>
             </div>
-
-
-
-
-            <Navbar />
         </div>
     );
 

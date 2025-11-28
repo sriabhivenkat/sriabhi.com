@@ -14,8 +14,10 @@ export async function getAccessToken() {
           Accept: 'application/json',
         },
         body: JSON.stringify({
-            username: process.env.AUTH_TOKEN_USER,
-            password: process.env.AUTH_TOKEN_PASS,
+            // username: process.env.AUTH_TOKEN_USER,
+            // password: process.env.AUTH_TOKEN_PASS,
+            username:"AbhiVenkat2002$",
+            password:"#SoggyApples1496$",
         }),
       });
 

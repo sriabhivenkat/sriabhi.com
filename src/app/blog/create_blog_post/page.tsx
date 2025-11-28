@@ -1,8 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import Navbar from "@/components/Navbar";
 import ReactMarkdown from "react-markdown";
-import Markdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import { getAccessToken } from "../../../../functions/abhiPcCalls";
 
@@ -111,7 +109,7 @@ useEffect(() => {
     }
   ]
   return (
-    <div className="min-h-screen flex flex-col p-5 overflow-hidden bg-[#F4F2F3]">
+    <div className="min-h-screen flex flex-col p-5 mt-15 lg:mt-10 overflow-hidden bg-[#F4F2F3]">
       <div className="w-full flex flex-col ">
         <div className="flex flex-col items-start justify-center mb-4">
           <h1 className="text-3xl font-serif-custom font-black text-black">
@@ -247,8 +245,6 @@ useEffect(() => {
             )}
         </div>
       </div>
-
-      <Navbar position="top-right"/>
     </div>
   );
 }

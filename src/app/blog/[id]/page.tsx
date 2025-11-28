@@ -1,10 +1,12 @@
 "use client";
 import { use, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import Navbar from "@/components/Navbar";
 import { getAccessToken } from "../../../../functions/abhiPcCalls";
 import remarkGfm from 'remark-gfm'
 import Image from "next/image";
+import { Check, Copy } from "@deemlol/next-icons";
+import CopyableCodeBlock from "@/components/CodeBlock";
+import Navbar from "@/components/Navbar";
 
 interface Post {
   file_url: string;
@@ -72,7 +74,7 @@ export default function Page(props: { params: Promise<{ id: string }> }) {
   }, [post, token]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start bg-[#F4F2F3] p-5">
+    <div className="min-h-screen flex flex-col items-center justify-start bg-[#F4F2F3] p-5 mt-15 lg:mt-10">
       <Navbar />
       <div className="flex flex-col items-center w-full max-w-4xl">
         <div className="w-full flex flex-col items-center mb-5">
@@ -104,7 +106,7 @@ export default function Page(props: { params: Promise<{ id: string }> }) {
                     })} | {post?.minute_read} minute read
             </p>
         </div>
-        <div className="flex flex-col flex-1 mx-auto prose prose-lg text-black">
+        <div className="flex flex-col flex-1 mx-auto prose prose-lg text-black max-w-full overflow-x-hidden">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -115,10 +117,53 @@ export default function Page(props: { params: Promise<{ id: string }> }) {
                     ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-4 text-black" {...props} />,
                     li: ({node, ...props}) => <li className="mb-1 text-black" {...props} />,
                     p: ({node, ...props}) => <p className="mb-4 text-black" {...props} />,
-                    code: ({node, inline, ...props}: any) => 
-                        inline 
-                            ? <code className="bg-gray-100 px-1 py-0.5 rounded" {...props} />
-                            : <code className="block bg-gray-100 p-4 rounded mb-4" {...props} />,
+                    code: ({ node, inline, children, ...props }: any) => {
+                      // Inline code → do nothing special
+                      if (inline) {
+                        return (
+                          <code
+                            className="bg-gray-100 px-1 py-0.5 rounded break-words"
+                            {...props}
+                          />
+                        );
+                      }
+
+                      return <CopyableCodeBlock>{children}</CopyableCodeBlock>
+                    },
+
+                    a: ({ node, ...props }) => (
+                      <a
+                        {...props}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative text-black underline decoration-2 underline-offset-2 
+                                  hover:decoration-gray hover:decoration-4 
+                                  inline-flex items-center justify-center gap-1 transition duration-300"
+                      >
+                        {props.children}
+
+                        {/* External link icon */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 inline-block decoration-2 hover:decoration-4"   // bigger icon
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M10 6h8m0 0v8m0-8L10 14m-4 4h12"
+                          />
+                        </svg>
+
+                        {/* Bold white underline (on hover) */}
+                        <span className="absolute inset-x-0 bottom-0 h-[2px] bg-transparent 
+                                        group-hover:bg-white"></span>
+                      </a>
+                    ),
+
                     table: ({node, ...props}) => <table className="table-auto border-collapse border border-gray-300 mb-4 w-full" {...props} />,
                     thead: ({node, ...props}) => <thead className="bg-gray-100" {...props} />,
                     tbody: ({node, ...props}) => <tbody {...props} />,
