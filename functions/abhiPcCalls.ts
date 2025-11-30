@@ -154,5 +154,17 @@ export async function getPhotoUrls(subfolder: string, token: string): Promise<Ph
   }
 }
 
+export async function fetchStravaAccessToken(): Promise<string> {
+  const res = await fetch("/api/strava/token");
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to fetch Strava token");
+  }
+
+  const data = await res.json();
+  return data.access_token;
+}
+
 
     

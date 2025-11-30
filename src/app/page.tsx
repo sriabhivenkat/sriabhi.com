@@ -49,7 +49,7 @@ export default function Home() {
     },
     {
       title: "About me",
-      bg_img: "https://home.sriabhi.com/api/v1/photo/trips/alaska/0722766_0722766-R2-057-27_thumb.jpg",
+      bg_img: "https://home.sriabhi.com/api/v1/photo/iphone_photos/IMG_4211.jpeg",
       link: "/sriabhi"
     }
   ]
