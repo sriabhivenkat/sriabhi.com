@@ -2,7 +2,7 @@ import Image from "next/image";
 import { PhotoWithMetadata } from "../../hooks/usePhotoStore";
 import { useState } from "react";
 
-export default function PhotoCard({ photo, index }: { photo: PhotoWithMetadata; index: number }) {
+export default function PhotoCard({ photo, index, needsLocation }: { photo: PhotoWithMetadata; index: number, needsLocation: boolean}) {
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -20,7 +20,7 @@ export default function PhotoCard({ photo, index }: { photo: PhotoWithMetadata; 
             blurDataURL={photo.url}
             loading="eager"
             alt="..."
-            className={`rounded-lg object-cover transition-opacity duration-700
+            className={`rounded-lg object-cover transition-opacity duration-700 w-full
             ${loaded ? "opacity-100" : "opacity-0"}`}
             onLoad={() => setLoaded(true)}
             height={500}
@@ -31,11 +31,13 @@ export default function PhotoCard({ photo, index }: { photo: PhotoWithMetadata; 
 
       {/* Metadata */}
       <div className="mt-2 flex justify-between items-center">
-        <h2 className="text-2xl font-serif-custom font-black mb-1 text-black">
-          {photo.location || "Unknown Location"}
-        </h2>
+        {needsLocation && (
+          <h2 className="text-2xl font-serif-custom font-black mb-1 text-black">
+            {photo.location || "Unknown Location"}
+          </h2>
+        )}
         <p className="text-xl font-serif-custom font-bold mb-1 text-right text-black">
-          {photo.metadata?.date_taken
+          {photo.metadata?.date_taken && needsLocation
             ? new Date(photo.metadata.date_taken).toLocaleString("en-US", {
                 hour: "numeric",
                 minute: "numeric",
@@ -52,29 +54,29 @@ export default function PhotoCard({ photo, index }: { photo: PhotoWithMetadata; 
       <div className="w-full rounded-md flex flex-wrap overflow-x-auto gap-1 scrollbar-hidden">
         {photo.metadata?.model && (
           <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
-            <p className="text-black text-md font-black">{photo.metadata.model} |</p> 
+            <p className={`text-black ${needsLocation ? "text-md" : "text-xl"} font-black`}>{photo.metadata.model} |</p> 
           </div>
         )}
         {photo.metadata?.film && (
-          <div className="h-8 bg-gray-900 rounded-md flex items-center p-2 flex-shrink-0">
-            <p className="text-white text-sm font-light">35mm Kodak Gold 200</p>
+          <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
+            <p className={`text-black ${needsLocation ? "text-md" : "text-xl"} font-black`}>35mm Kodak Gold 200 |</p>
           </div>
         )}
         {photo.metadata?.aperture && (
           <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
-            <p className="text-black text-md"><strong>{photo.metadata.aperture} |</strong></p>
+            <p className={`text-black ${needsLocation ? "text-md" : "text-xl"} font-black`}><strong>{photo.metadata.aperture} |</strong></p>
           </div>
         )}
         {photo.metadata?.shutter_speed && (
           <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
-            <p className="text-black text-md ">
+            <p className={`text-black ${needsLocation ? "text-md" : "text-xl"} font-black`}>
               <strong>1/{photo.metadata.shutter_speed}s |</strong>
             </p>
           </div>
         )}
         {photo.metadata?.iso && (
           <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
-             <p className="text-black text-md ">
+             <p className={`text-black ${needsLocation ? "text-md" : "text-xl"} font-black`}>
               <strong>ISO {photo.metadata.iso}</strong>
             </p>
           </div>

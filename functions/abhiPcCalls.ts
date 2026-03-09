@@ -16,8 +16,8 @@ export async function getAccessToken() {
         body: JSON.stringify({
             // username: process.env.AUTH_TOKEN_USER,
             // password: process.env.AUTH_TOKEN_PASS,
-            username:"AbhiVenkat2002$",
-            password:"#SoggyApples1496$",
+            username:"#AbhiVenkat2002%$",
+            password:"#SeahawksNewYorkFan4576$",
         }),
       });
 
@@ -127,7 +127,7 @@ export async function exchangePublicToken(public_token: string) {
 export async function getPhotoUrls(subfolder: string, token: string): Promise<PhotoWithMetadata[]> {
   try {
     const resp = await fetch(
-      `${baseUrl}/api/v1/list_photos?subfolder=${encodeURIComponent(subfolder)}`,
+      `${baseUrl}/api/v1/photo/list_photos?subfolder=${encodeURIComponent(subfolder)}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -164,6 +164,56 @@ export async function fetchStravaAccessToken(): Promise<string> {
 
   const data = await res.json();
   return data.access_token;
+}
+
+export async function subscribeToBlog(email: string, firstName: string) {
+  const { access_token } = await getAccessToken();
+  const resp = await fetch(
+      `${baseUrl}/api/v1/subscribe_to_blog`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          firstName
+        }),
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      }
+  );
+
+  if (!(resp.status === 201 || resp.status === 200)) {
+    const error = await resp.json();
+    throw new Error(error.error || "Something went wrong");
+  }
+
+  const data = await resp.json();
+  return {
+    "status": data.status
+  }
+}
+
+export async function login(username: string, password: string) {
+  const res = await fetch(`${baseUrl}/api/v1/request_access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Wrong password. Try again!");
+  }
+
+  const data = await res.json();
+  localStorage.setItem("access_token", data.access_token);
+  return data.access_token;
+}
+
+export function getStoredAccessToken() {
+  return localStorage.getItem("access_token");
 }
 
 

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy } from "@deemlol/next-icons";
+import { Check, Copy } from "lucide-react";
 
 export default function CopyableCodeBlock({
   children,

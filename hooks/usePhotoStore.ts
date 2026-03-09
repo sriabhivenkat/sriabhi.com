@@ -39,7 +39,8 @@ const DEFAULT_SUBFOLDERS = [
   "trips/austin",
   "trips/nola",
   "trips/cold_springs",
-  "trips/oklahoma"
+  "trips/oklahoma",
+  "trips/new_mexico"
 ];
 
 export const usePhotoStore = create<PhotoStore>((set, get) => {

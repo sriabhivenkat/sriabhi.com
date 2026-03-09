@@ -1,126 +1,164 @@
-"use client"
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+"use client";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import Navbar from "@/components/Navbar";
+import Modal from "@/components/Modal";
+import { getAccessToken } from "../../../functions/abhiPcCalls";
 
-import { PhotoWithMetadata, usePhotoStore } from '../../../hooks/usePhotoStore';
-import { getAccessToken } from '../../../functions/abhiPcCalls';
-import Link from 'next/link';
-import Navbar from '@/components/Navbar';
-
-interface Post {
-    md_url: string;
-    title?: string;
-    subtitle?: string;
-    date_created?: Date;
-    minute_read?: number;
-    word_count?: number;
-    cover_photo?: string;
-    id: string;
+export interface Post {
+  title?: string;
+  subtitle?: string;
+  date_created?: Date;
+  minute_read?: number;
+  cover_photo?: string;
+  id: string;
+  active: boolean;
+  blog_type: number;
+  start_year: number | undefined;
+  end_year: number | undefined;
 }
 
 export default function Page() {
-    const [posts, setPosts] = useState<Post[]>([])
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        const main = async() => {
-            console.log("CALLING ACCESS TOKEN")
-            const {access_token} = await getAccessToken();
-
-            await fetch("https://home.sriabhi.com/api/v1/list_files", {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${access_token}` // <-- include JWT here
-                },
-            })
-            .then((res) => res.json())
-            .then((data: Post[]) => {
-                const newPosts = data.map((post) => ({
-                    ...post,
-                    date_created: new Date(post.date_created as Date) 
-                }));
-
-                newPosts.sort((a: any, b:any) => b.date_created - a.date_created);
-                console.log(newPosts)
-                setPosts(newPosts.filter((post) => post.title !== "abhi_resume"));
-            });           
+  useEffect(() => {
+    const main = async () => {
+      const { access_token } = await getAccessToken();
+      const res = await fetch(
+        "https://home.sriabhi.com/api/v1/list_files",
+        {
+          headers: { Authorization: `Bearer ${access_token}` },
         }
-        main()
-    }, [])
+      );
 
-    return (
-        <div className="min-h-screen flex flex-col p-2 py-3 bg-[#F4F2F3]">
-            <Navbar />
-            <div className="mt-12 lg:mt-10 flex flex-col flex-1">
-            {/* Header / Title section */}
-            <div className="ml-2 flex flex-col items-start justify-center mb-5">
-                <div className="flex w-full justify-between items-center">
-                    <h1 className="text-5xl font-serif-custom font-black text-black">Blog</h1>
-                </div>
-            </div>
+      const data: Post[] = await res.json();
 
-            {/* This container will now fill all remaining vertical height */}
-            <div className="ml-2 w-full flex flex-col lg:flex-row flex-1 overflow-hidden pr-2 gap-4">
-                <Link
-                    className="h-52 w-full lg:w-2/3 lg:h-auto flex flex-col rounded-lg bg-center bg-cover hover:cursor-pointer"
-                    style={{ backgroundImage: `url(${posts[0]?.cover_photo})` }}
-                    href={`/blog/${posts[0]?.id}`}
-                >
-                    {/* This div pushes content to bottom */}
-                    <div className="mt-2 p-4 flex items-center justify-between rounded-lg">
-                        <div className='flex flex-col'>
-                            <h1 className="text-4xl lg:text-5xl font-serif-custom text-white text-left">
-                                {posts[0]?.title}
-                            </h1>
-                            <p className="text-md text-white text-left mt-1">
-                                {posts[0]?.subtitle}
-                            </p>
-                        </div>
-                        <div className='text-right'>
-                            <p className="font-serif-custom text-xl">
-                                {posts[0]?.date_created?.toLocaleDateString()}
-                            </p>
-                            <p className="text-sm">
-                                {posts[0]?.minute_read} minute read
-                            </p>
-                        </div>
-                    </div>
-                </Link>
+      setPosts(
+        data
+          .map((p) => ({ ...p, date_created: new Date(p.date_created as any) }))
+          .filter((p) => p.title !== "abhi_resume")
+          .filter((p) => p.active && p.blog_type != 2)
+          .sort((a, b) => +b.date_created! - +a.date_created!)
+      );
+    };
 
-                {/* Right container (optional) */}
-                <div className="w-full lg:w-1/3">
-                    <h1 className="text-4xl font-serif-custom text-black">Other reads</h1>
-                    <div className="h-full flex flex-1 flex-col space-y-3 mt-2 overflow-auto">
-                        {posts.slice(1).map((post, index) => (
-                            <Link
-                                className="h-36 lg:h-32 w-full rounded-md hover:cursor-pointer bg-cover"
-                                style={{ backgroundImage: `url(${post.cover_photo})` }}
-                                href={`/blog/${post.id}`}
-                                key={index}
-                            >
-                                <div className="mt-auto bg-black/20 p-4 flex flex-col lg:flex-row justify-between h-full rounded-md items-start">
-                                    <div className='flex flex-col'>
-                                        <h1 className="text-4xl lg:text-3xl font-serif-custom text-white text-left">
-                                            {post?.title}
-                                        </h1>
-                                        <p className="text-md text-white text-left mt-1">
-                                            {post?.subtitle}
-                                        </p>
-                                    </div>
-                                    <div className='text-left lg:text-right'>
-                                        <p className="font-serif-custom text-xl">
-                                            {post?.date_created?.toLocaleDateString()}
-                                        </p>
-                                        <p className="text-sm">
-                                            {post?.minute_read} minute read
-                                        </p>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                    </div>
-                </div>
-            </div>
+    main();
+  }, []);
+
+  const latest = posts[0];
+  const others = posts.slice(1);
+
+  return (
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#F4F2F3] flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex flex-col px-3 pt-12 lg:pt-10 lg:min-h-0 lg:overflow-hidden">
+        <div className="mt-2 mb-5 flex-shrink-0">
+          <h1 className="text-5xl font-serif-custom font-black text-black">
+            Blog
+          </h1>
         </div>
-    );
 
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 lg:flex-1 lg:min-h-0 lg:overflow-hidden pb-8 lg:pb-0">
+          {latest && (
+            <Link
+              href={`/blog/${latest.id}`}
+              className="flex flex-col lg:min-h-0 lg:overflow-hidden rounded-lg"
+            >
+              <h2 className="text-3xl font-serif-custom text-black mb-2 flex-shrink-0">
+                Latest
+              </h2>
+
+              <div className="
+                relative
+                w-full
+                aspect-[3/4]      
+                lg:aspect-auto
+                lg:flex-1         
+                lg:min-h-0
+                overflow-hidden
+                rounded-lg
+                "
+              >
+                <Image
+                  src={latest.cover_photo || ""}
+                  alt="cover"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+
+              <div className="p-3 flex justify-between items-end flex-shrink-0">
+                <div>
+                  <h3 className="text-4xl font-serif-custom text-black">
+                    {latest.title}
+                  </h3>
+                  <p className="text-md text-black mt-1">
+                    {latest.subtitle}
+                  </p>
+                </div>
+
+                <div className="text-right text-black">
+                  <p className="font-serif-custom text-xl">
+                    {latest.date_created?.toLocaleDateString()}
+                  </p>
+                  <p className="text-sm">
+                    {latest.minute_read} min read
+                  </p>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {/* RIGHT — scrollable on large screens, natural flow on mobile */}
+          <div className="flex flex-col lg:min-h-0 lg:overflow-hidden">
+            <h2 className="text-3xl font-serif-custom text-black mb-2 flex-shrink-0">
+              Other reads
+            </h2>
+
+            {/* ✅ SCROLL CONTAINER on large screens only */}
+            <div className="lg:flex-1 lg:overflow-y-auto space-y-2 lg:pr-1">
+              {others.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/blog/${post.id}`}
+                  className="flex flex-col rounded-md overflow-hidden"
+                >
+                  <div className="relative h-40 w-full">
+                    <Image
+                      src={post.cover_photo || ""}
+                      alt="cover"
+                      fill
+                      className="object-cover rounded-lg"
+                    />
+                  </div>
+
+                  <div className="py-2 flex justify-between items-start">
+                    <div className="max-w-[70%]">
+                      <h3 className="text-xl font-serif-custom text-black">
+                        {post.title}
+                      </h3>
+                      <p className="text-sm text-black line-clamp-1">
+                        {post.subtitle}
+                      </p>
+                    </div>
+
+                    <div className="text-right text-sm text-black">
+                      <p className="font-serif-custom">
+                        {post.date_created?.toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {post.minute_read} min
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -30,6 +30,7 @@ export default function Page() {
     { name: "New Orleans", grabPath: "trips/nola" },
     { name: "Cold Springs", grabPath: "trips/cold_springs" },
     { name: "Lake Murray State Park", grabPath: "trips/oklahoma" },
+    { name: "New Mexico", grabPath: "trips/new_mexico" }
   ];
 
   // Aggregate photos and attach location
@@ -46,8 +47,14 @@ export default function Page() {
         );
       }
     }
-    setAllPhotos(aggregated);
-    setFilteredPhotos(aggregated);
+    const sortedAgg = aggregated.sort((a,b) => {
+      const dateA = a.metadata?.date_taken ? new Date(a.metadata?.date_taken).getTime() : 0;
+      const dateB = b.metadata?.date_taken ? new Date(b.metadata?.date_taken).getTime() : 0;
+
+      return dateB - dateA
+    })
+    setAllPhotos(sortedAgg);
+    setFilteredPhotos(sortedAgg);
   }, [photoPaths]);
 
   // Filter photos based on active filters
@@ -99,7 +106,7 @@ export default function Page() {
       setTimeout(() => {
         setVisibleCount(prev => Math.min(prev + 6, filteredPhotos.length));
         loadingRef.current = false;
-      }, 500); // 1 second delay
+      }, 500);
     }
   }, [filteredPhotos.length]);
 
@@ -107,10 +114,9 @@ export default function Page() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
-  const store = usePhotoStore.getState();
-  console.log('Raw photo URL from store:', store.photoPaths['trips/nyc']?.[0]?.url)
+
   return (
-    <div className="min-h-screen flex p-3 sm:p-5 overflow-hidden bg-[#F4F2F3]">
+    <div className="min-h-screen flex p-3 lg:px-2 overflow-hidden bg-[#F4F2F3]">
       <Navbar />
       <div className="mt-12 lg:mt-10 flex flex-col flex-1">
       <div className="w-full">
@@ -153,11 +159,15 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Photos grid */}
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-          {filteredPhotos.slice(0, visibleCount).map((photo, index) => (
-            <PhotoCard photo={photo} key={index} index={index} />
-          ))}
+        {/* Masonry Photos grid - CSS columns approach */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+          {filteredPhotos
+            .slice(0, visibleCount)
+            .map((photo, index) => (
+              <div key={index} className="break-inside-avoid">
+                <PhotoCard photo={photo} index={index} needsLocation/>
+              </div>
+            ))}
         </div>
         </div>
       </div>

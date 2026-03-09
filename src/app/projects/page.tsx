@@ -3,7 +3,17 @@ import React, { useEffect, useState } from 'react';
 import PokeballReveal from '@/components/PokeballReveal';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
+import { Post } from '../blog/page';
+import { getAccessToken } from '../../../functions/abhiPcCalls';
+import Link from 'next/link';
 
+interface Container {
+    title: string;
+    description: string;
+    main_language?: string;
+    techs?: string[];
+    tasks?: string[];
+}
 export default function Page() {
     const containerInfo = {
         "default": {
@@ -12,31 +22,95 @@ export default function Page() {
         },
         "oshawott": {
             "title": "Oshawott",
-            "description": "Oshawott is my main API. It is the centerpiece of my entire team! It handles calls from Lucario and Mewtwo to serve content from my PostgreSQL DB, as well as provides processing functions for Dragonite to use! It's written in Flask. It serves on home.sriabhi.com - check out https://home.sriabhi.com/healthcheck!"
+            "description": "Oshawott is my main API, in charge of basic CRUD operations. I chose this name because I love Oshawott.",
+            "main_language": "Python",
+            "techs": [
+                "Flask",
+                "Graphene",
+                "SQLAlchemy",
+                "Plaid API",
+                "Fitbit API"
+            ],
+            "tasks": [
+                "Creating and editing blog posts",
+                "Adding and updating photos",
+                "GraphQL API for all transactions, current account balances, etc",
+                "Internal Plaid endpoints for batch processing",
+                "Internal Fitbit endpoints for ETL pipelining for my running data"
+            ]
         },
         "lucario": {
             "title": "Lucario",
-            "description": "Lucario is my main frontend - the website you're looking at now! It's written in Next.js and Typescript! I chose Lucario because I wanted a name for an agile workhorse container, and that seems very Lucario-esque."
+            "description": "Lucario is my main frontend - the website you're looking at now! I chose Lucario because it is an agile workhorse Pokémon.",
+            "main_language": "TypeScript",
+            "techs": [
+                "Next.js"
+            ],
+            "tasks": [
+                "Render all content performantly",
+                "Onboard new accounts and financial institutions for later processing",
+                "Earmark photos for agentic photo editing"
+            ]
         },
         "snorlax": {
             "title": "Snorlax",
-            "description": "Snorlax is the main entry point of my app! It uses Nginx for the reverse proxy setup and is where my main Docker bridge network is. I generate images of the other containers and Snorlax pulls them all on startup. I also use it to redirect from HTTP to HTTPS. I suppose I also do some amount of IP tracking and blocking, rate limiting, to ensure my team is safe! It's named Snorlax because he blocks the road hehe."
+            "description": "Snorlax is the main entry point of my app! I chose this name because Snorlax famously blocks the road in the games.",
+            "main_language": "NGINX Config files",
+            "techs": [
+                "NGINX"
+            ],
+            "tasks": [
+                "Rate-limiting and load balancing",
+                "SSL certifications",
+                "General container management via a bridge network",
+                "Port forwarding",
+                "Request signing (required auth credentials and security headers)"
+            ]
         },
         "dragonite": {
             "title": "Dragonite",
-            "description": "Dragonite is my task scheduler and batch processor! It also takes care of my LangGraph workflows. I named him after the Dragonite Mailman from the anime. Dragonite currently runs 3 routes for me - the Sinnoh Route (grabs transactions every 12 hours), the Unova Route (updates my account balances every 6 hours), and the Hoenn Route (Langgraph - transaction analysis PDF generator). I have a few things down the pipeline for the Kanto Route - like asynchronous image processing and AWS Lambda-like triggers with my current file storage system."
+            "description": "Dragonite is my task scheduler and batch processor! I chose this name because the container's job is to converse with Plaid, Fitbit, and my MCP server to bring data back and forth, not unlike the Dragonite Mailman from the anime!",
+            "main_language": "Python",
+            "techs": [
+                "CRONTab",
+            ],
+            "tasks": [
+                "Update account balances every 24 hours",
+                "Update transactions every 48 hours",
+                "Asynchronous image processing via message queue",
+                "LLM-based financial analysis",
+                "Garbage collection for stale transactions older than a year"
+            ]
         },
         "mewtwo": {
             "title": "Mewtwo",
-            "description": "Mewtwo is where my LLMs are stored. I use Ollama and have currently pulled Gemma3 4B and LLaMa 4B as well! I can only run SLMs for now since I only have a NVIDIA RTX 3060. Please reach out to help me get a new GPU 🙏"
+            "description": "Mewtwo is where my LLMs and agentic workflows are stored. I chose this name because, in the movie, Mewtwo was grown in a lab to be a weapon, eventually wondering what it's purpose is - which feels like something an LLM would do with enough sentience.",
+            "main_language": "Python",
+            "techs": [
+                "LangGraph",
+                "FastMCP",
+                "Flask",
+                "Gemma3:4B"
+            ],
+            "tasks": [
+                "Photo editing",
+                "Transactions analysis"
+            ]
         },
         "gengar": {
             "title": "Gengar",
-            "description": "Gengar is my PostgreSQL instance! It currently stores information about my account balances, transactions, merchants, photo URLs, blog post URLs, and cursors to track where I am in Plaid's transactions!",
+            "description": "Gengar is my database! I named it that because in the games, Gengar is able to store away nearly infinite amounts.",
+            "main_language": "SQL",
+            "techs": [
+                "PostgreSQL",
+            ],
+            "tasks": [
+                "Stores photos, blog links, transactions, balances, etc."
+            ]
         }
     }
     type ContainerKey = keyof typeof containerInfo;
-    const [selectedContainer, setSelectedContainer] = useState(containerInfo["default"]);
+    const [selectedContainer, setSelectedContainer] = useState<Container>(containerInfo["default"]);
     const [containerHealths, setContainerHealths] = useState<Record<string, string>>({});
     const [selectedHealth, setSelectedHealth] = useState("all");
 
@@ -72,43 +146,35 @@ export default function Page() {
             date: "2020-2021"
         }
     ]
-    useEffect(() => {
-        const fetchHealths = async () => {
-            try {
-                const res = await fetch("https://home.sriabhi.com/api/containers/health");
-                const data = await res.json();
-
-                let healthy = true;
-                Object.entries(data).forEach(([name, status]) => {
-                    if (!["abhi_batch_processor-dragonite-1", "bold_chaplygin", "buildx_buildkit_mybuilder0", "funny_germain", "torterra"].includes(name)) {
-                        if (status !== "running") healthy = false;
-                    }
-                });
-
-                const allHealths = {
-                    oshawott: data["oshawott-main-api"],
-                    dragonite: data["dragonite-batch-processor"],
-                    gengar: data["gengar-postgres"],
-                    lucario: data["lucario-frontend"],
-                    mewtwo: data["mewtwo-deepseek-api"],
-                    snorlax: data["snorlax-proxy-gateway"],
-                    all: healthy ? "running" : "exited",
-                };
-
-                setContainerHealths(allHealths);
-                setSelectedHealth("all");
-            } catch (error) {
-                console.error("Failed to fetch container health:", error);
+    const [projects, setProjects] = useState<Post[]>([]);
+      useEffect(() => {
+        const main = async () => {
+          const { access_token } = await getAccessToken();
+          const res = await fetch(
+            "https://home.sriabhi.com/api/v1/list_files",
+            {
+              headers: { Authorization: `Bearer ${access_token}` },
             }
+          );
+    
+          const data: Post[] = await res.json();
+    
+          setProjects(
+            data
+              .map((p) => ({ ...p, date_created: new Date(p.date_created as any) }))
+              .filter((p) => p.title !== "abhi_resume")
+              .filter((p) => p.active && p.blog_type == 2)
+              .sort((a, b) => +b.start_year! - +a.start_year!)
+          );
         };
-
-        fetchHealths();
-    }, []);
+    
+        main();
+      }, []);
 
     // Handles click on a Pokeball with optional animation delay
     const handlePokeballClick = (key: ContainerKey) => {
         setSelectedContainer(containerInfo[key]);
-        setSelectedHealth(key);
+        // setSelectedHealth(key);
     };
 
     return (
@@ -147,30 +213,56 @@ export default function Page() {
                         <p className="text-gray-400 text-xs mb-1 font-bold">FEATURED | 2025</p>
                         <h1 className="text-2xl text-black font-serif-custom font-bold mb-1">sriabhi.com</h1>
                         <h2 className="text-lg text-black font-inter font-bold mb-1">{selectedContainer.title}</h2>
-                        <div className="flex items-center max-h-16 max-w-28 p-1 rounded text-black text-sm border border-gray-400 mb-1">
-                            <div className={`h-3 w-3 mr-1 rounded-full ${containerHealths[selectedHealth] === "running" ? "bg-green-600" : "bg-red-600"}`}/>
-                            {containerHealths[selectedHealth] === "running" ? "HEALTHY" : "DOWN"}
-                        </div>
+                        {selectedContainer.techs &&
+                            <div className='flex items-center justify-items-center gap-x-2'>
+                                <p className='text-sm text-black font-light mr-2'>{selectedContainer.main_language}</p>
+                                {selectedContainer.techs.map((item, index) => (
+                                    <div 
+                                        className="flex items-center max-h-16 min-w-20 p-1 rounded text-black text-sm border border-gray-400 mb-1 flex items-center justify-center"
+                                        key={index}
+                                    >
+                                        {item}
+                                    </div>
+                                ))}
+                            </div>
+                        }
                         <p className="text-sm text-gray-600 leading-relaxed">{selectedContainer.description}</p>
+                        {selectedContainer.tasks && (
+                            <div className='mt-5'>
+                                <p className="text-md font-light text-black leading-relaxed">Tasks</p>
+                                <ul className="list-disc list-inside text-sm text-gray-600 leading-relaxed">
+                                    {selectedContainer.tasks.map((item, index) => (
+                                        <li key={index}>
+                                        {item}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        
                     </div>
                 </div>
                     <div className="flex flex-col items-center mt-10">
                         <div className='lg:w-3/4 space-y-2'>
-                            {otherProjects.map((project, index) => (
-                                <div className="p-1 flex flex-col lg:flex-row justify-center items-center space-x-4 hover:cursor-pointer" key={index}>
+                            {projects.map((project, index) => (
+                                <Link 
+                                    className="p-1 flex flex-col lg:flex-row justify-center items-center space-x-4 hover:cursor-pointer" 
+                                    key={index}
+                                    href={`/blog/${project.id}`}
+                                >
                                     <div className='lg:max-w-1/3 self-center'>
-                                        <p className="text-gray-400 text-xs mb-1 font-bold">{project?.date}</p>
+                                        <p className="text-gray-400 text-xs mb-1 font-bold">{project?.start_year} {project.end_year ? `- ${project.end_year}` : null}</p>
                                         <h1 className="text-black text-2xl font-serif-custom font-bold mb-1">{project.title}</h1>
-                                        <p className="text-gray-600 text-sm leading-relaxed">{project.description}</p>
+                                        <p className="text-gray-600 text-sm leading-relaxed">{project.subtitle}</p>
                                     </div>
                                     <Image 
-                                        src={project.photoUrl}
+                                        src={project.cover_photo || ""}
                                         alt="alt-text"
                                         className='bg-cover lg:max-w-1/2 mt-2 rounded-md transform transition duration-400 ease-in-out hover:scale-105'
                                         width={400}
                                         height={500}
                                     />
-                                </div>
+                                </Link>
                             ))}
                         </div>
                     </div>

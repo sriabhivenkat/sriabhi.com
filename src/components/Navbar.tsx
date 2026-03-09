@@ -56,6 +56,7 @@ function NavLinks({ mobile = false, setOpen}: { mobile?: boolean, setOpen: any})
       <Link href="/blog" onClick={() => setOpen(false)}><p className={cls}>Blog</p></Link>
       <Link href="/projects" onClick={() => setOpen(false)}><p className={cls}>Projects</p></Link>
       <Link href="/sriabhi" onClick={() => setOpen(false)}><p className={cls}>About me</p></Link>
+      <Link href="/internal" onClick={() => setOpen(false)}><p className={cls}>Internal</p></Link>
     </>
   );
 }
