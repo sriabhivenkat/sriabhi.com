@@ -1,4 +1,4 @@
-import { PhotoWithMetadata } from "../hooks/usePhotoStore";
+import { PhotoUrlsResponse, PhotoWithMetadata } from "../hooks/usePhotoStore";
 
 // const baseUrl = process.env.NODE_ENV === 'development'
 //   ? 'http://localhost:8080'
@@ -7,25 +7,10 @@ import { PhotoWithMetadata } from "../hooks/usePhotoStore";
 const baseUrl = "https://home.sriabhi.com"
 
 export async function getAccessToken() {
-    const res = await fetch(`${baseUrl}/api/v1/request_access_token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-            // username: process.env.AUTH_TOKEN_USER,
-            // password: process.env.AUTH_TOKEN_PASS,
-            username:"#AbhiVenkat2002%$",
-            password:"#SeahawksNewYorkFan4576$",
-        }),
-      });
-
-    if (!res.ok) {
-        throw new Error('Failed to fetch access token');
-    }
-    const data = await res.json();
-    return {access_token: data.access_token, item_id: data.item_id};
+  console.log("URL: ", process.env.API_BASE_URL)
+  const res = await fetch('/api/access-token'); // hits your Next.js server, not Flask directly
+  const data = await res.json();
+  return { access_token: data.access_token };
 }
 
 export async function connectNewInstitution(item_id: string, plaid_access_token: string, institution_id: string, institution_name: string) {
@@ -124,10 +109,13 @@ export async function exchangePublicToken(public_token: string) {
 /**
  * Fetches photo URLs for a given subfolder path.
  */
-export async function getPhotoUrls(subfolder: string, token: string): Promise<PhotoWithMetadata[]> {
+export async function getPhotoUrls(subfolder: string, token: string, limit?: number): Promise<PhotoUrlsResponse> {
   try {
+    const url = new URL(`${baseUrl}/api/v1/photo/list_photos`);
+    url.searchParams.set('subfolder', subfolder);
+    if (limit) url.searchParams.set('limit', String(limit));
     const resp = await fetch(
-      `${baseUrl}/api/v1/photo/list_photos?subfolder=${encodeURIComponent(subfolder)}`,
+      url.toString(),
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -137,7 +125,8 @@ export async function getPhotoUrls(subfolder: string, token: string): Promise<Ph
 
     if (!resp.ok) throw new Error(`Failed to fetch photos for ${subfolder}`);
 
-    const files = await resp.json();
+    const data = await resp.json();
+    const files = data.photos;
 
     // Convert backend response → frontend-friendly structure
     const formatted: PhotoWithMetadata[] = files.map((file: any) => ({
@@ -147,10 +136,15 @@ export async function getPhotoUrls(subfolder: string, token: string): Promise<Ph
 
     console.log(`Fetched photo metadata for ${subfolder}:`, formatted);
 
-    return formatted;
+    return {
+      photos: formatted,
+      total: data.total,
+      coverUrl: `${baseUrl}/${data.cover_url}`,
+      lastUpdated: data.last_updated,
+    };
   } catch (err) {
     console.error(`Error fetching photos for ${subfolder}:`, err);
-    return [];
+    return { photos: [], total: 0, coverUrl: '', lastUpdated: '' };
   }
 }
 
@@ -216,5 +210,30 @@ export function getStoredAccessToken() {
   return localStorage.getItem("access_token");
 }
 
+export async function getCollections(): Promise<{ name: string; grabPath: string }[]> {
+  try {
+    const res = await fetch('/api/get-collections', {method: "GET"});
+    return res.json();
+  } catch (e) {
+    console.log("ERROR: ", e)
+    return [
+      {grabPath: "", name: ""}
+    ]
+  }
+}
 
-    
+export async function getCovers(): Promise<{ file_path: string; sub_folder_name: string }[]> {
+  try {
+    const { access_token } = await getAccessToken();
+    const res = await fetch('/api/get-covers', {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
+    return res.json();
+  } catch (e) {
+    console.error("ERROR fetching covers: ", e);
+    return [];
+  }
+}

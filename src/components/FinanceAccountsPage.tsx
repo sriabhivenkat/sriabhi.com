@@ -27,9 +27,7 @@ export default function FinanceAccountsPage({
     accounts
 }: AccountPageProps) {
 
-    const creditCardBackgrounds = {
-        "Venture X": "#004879"
-    }
+    const creditCardBackgrounds: Record<string, string> = { "Venture X": "some-color" };
     console.log("accounts: ", accounts)
     return(
         <>

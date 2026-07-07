@@ -1,6 +1,6 @@
 // src/hooks/usePhotoStore.ts
 import { create } from "zustand";
-import { getAccessToken, getPhotoUrls } from "../functions/abhiPcCalls";
+import { getAccessToken, getCovers, getPhotoUrls } from "../functions/abhiPcCalls";
 
 export interface Metadata {
   aperture?: string;
@@ -21,11 +21,23 @@ export interface PhotoWithMetadata {
   location?: string;
 }
 
+export interface PhotoUrlsResponse {
+  photos: PhotoWithMetadata[],
+  total: number,
+  coverUrl: string,
+  lastUpdated: string
+}
+
 interface PhotoStore {
-  photoPaths: Record<string, PhotoWithMetadata[]>;
-  loading: boolean;
+  photoData: Record<string, {
+    photos: PhotoWithMetadata[];
+    total: number;
+    coverUrl: string | null;
+    lastUpdated: string | null;
+  }>;
+  loading: Record<string, boolean>;
   error: string | null;
-  initialize: () => Promise<void>;
+  fetchFolder: (folder: string) => Promise<void>;
 }
 
 const DEFAULT_SUBFOLDERS = [
@@ -43,45 +55,27 @@ const DEFAULT_SUBFOLDERS = [
   "trips/new_mexico"
 ];
 
-export const usePhotoStore = create<PhotoStore>((set, get) => {
-  let initializing = false;
+export const usePhotoStore = create<PhotoStore>((set, get) => ({
+  photoData: {},
+  loading: {},
+  error: null,
 
-  const initialize = async () => {
-    const { photoPaths } = get();
-    if (Object.keys(photoPaths).length > 0 || initializing) return;
-
-    initializing = true;
-    set({ loading: true, error: null });
+  fetchFolder: async (folder: string) => {
+    if (get().photoData[folder] || get().loading[folder]) return;
+    set(state => ({ loading: { ...state.loading, [folder]: true } }));
 
     try {
-      // Fetch one access token for all folders
       const { access_token } = await getAccessToken();
-
-      const results = await Promise.all(
-        DEFAULT_SUBFOLDERS.map(async (folder) => {
-          const photos = await getPhotoUrls(folder, access_token);
-          const typedPhotos: PhotoWithMetadata[] = photos.map((p) => ({
-            url: p.url,
-            metadata: p.metadata || null,
-          }));
-          return [folder, typedPhotos] as const;
-        })
-      );
-
-      set({ photoPaths: Object.fromEntries(results) });
+      const data = await getPhotoUrls(folder, access_token);
+      set(state => ({
+        photoData: { ...state.photoData, [folder]: data },
+        loading: { ...state.loading, [folder]: false },
+      }));
     } catch (err: any) {
-      console.error("Error initializing photos:", err);
-      set({ error: err.message || "Unknown error" });
-    } finally {
-      set({ loading: false });
-      initializing = false;
+      set(state => ({
+        loading: { ...state.loading, [folder]: false },
+        error: err.message,
+      }));
     }
-  };
-
-  return {
-    photoPaths: {},
-    loading: false,
-    error: null,
-    initialize,
-  };
-});
+  }
+}));

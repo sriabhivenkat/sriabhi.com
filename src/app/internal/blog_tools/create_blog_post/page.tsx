@@ -294,7 +294,7 @@ export default function Page() {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="mt-2 px-4 py-2 bg-[#74A662] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create post"}
           </button>

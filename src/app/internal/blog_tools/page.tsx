@@ -189,7 +189,34 @@ export default function Page() {
                                 </div>
                             }
                             <button
-                                className="text-xs px-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-black"
+                                className="text-xs p-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-red-600"
+                                onClick={async() => {
+                                    if (confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
+                                        // Optimistically update UI
+                                        setPosts((prev) => prev.filter((p) => p.id !== item.id)); 
+                                        if (selectedPost === item) {
+                                            setSelectedPost(undefined);
+                                        }
+
+                                        const { access_token } = await getAccessToken();
+                                        await fetch(`https://home.sriabhi.com/api/v1/delete/${item.id}`, {
+                                            method: "DELETE",
+                                            headers: {
+                                                Authorization: `Bearer ${access_token}`,
+                                            },
+                                        }).then((res) => {
+                                            if (!res.ok) {
+                                                throw new Error("Failed to delete post");
+                                            }
+                                            alert("Post deleted successfully");
+                                        })
+                                    }
+                                }}
+                            >
+                                Delete
+                            </button>
+                            <button
+                                className="text-xs p-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-black"
                                 onClick={() => {
                                 if (selectedPost === item) {
                                     setSelectedPost(undefined);
@@ -201,7 +228,7 @@ export default function Page() {
                                 {selectedPost === item ? "Close content" : "Open content"}
                             </button>
                             <button 
-                                className="text-xs px-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-black"
+                                className="text-xs p-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-black"
                                 onClick={() => toggleStatus(item)}
                             >
                                 {item.active ? "Take private" : "Take public"}

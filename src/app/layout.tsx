@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Instrument_Serif } from "next/font/google";
 import "./globals.css";
-import PhotoInitializer from "@/components/PhotoInitializer";
 import Navbar from "@/components/Navbar";
 
 const geistSans = Geist({
@@ -44,7 +43,7 @@ export default function RootLayout({
           antialiased
         `}
       >
-        <PhotoInitializer />
+        {/* <PhotoInitializer /> */}
 
         <div className="flex-1 min-h-0">
           {children}

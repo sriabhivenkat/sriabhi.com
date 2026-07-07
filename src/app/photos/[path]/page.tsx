@@ -17,14 +17,16 @@ const PATH_NAMES: Record<string, string> = {
   "oklahoma": "Lake Murray State Park",
   "new_mexico": "New Mexico"
 };
-
+const BASE_URL = "https://home.sriabhi.com";
 // Static metadata for link previews
 export async function generateMetadata(
   { params }: { params: Promise<{ path: string }> }
 ): Promise<Metadata> {
   const { path } = await params;
+  console.log("PATH: ", path)
   const locationName = PATH_NAMES[path] || path;
-
+  const coverUrl = `${BASE_URL}/api/v1/photo/cover_photos/${path}_cover_thumb.webp`;
+  console.log("COVER URL: ", coverUrl)
   return {
     title: `${locationName} Gallery`,
     description: `Photo collection from ${locationName}`,
@@ -34,7 +36,7 @@ export async function generateMetadata(
       type: "website",
       images: [
         {
-          url: "https://home.sriabhi.com/api/v1/photo/trips/rainier/_DSF0659.jpg",
+          url: coverUrl,
           width: 1200,
           height: 630,
           alt: "cover image",
@@ -45,6 +47,7 @@ export async function generateMetadata(
       card: "summary_large_image",
       title: `${locationName} Photos`,
       description: `Photo collection from ${locationName}`,
+      images: [coverUrl],
     },
   };
 }

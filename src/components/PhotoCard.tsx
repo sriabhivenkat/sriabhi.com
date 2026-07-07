@@ -31,14 +31,9 @@ export default function PhotoCard({ photo, index, needsLocation }: { photo: Phot
 
       {/* Metadata */}
       <div className="mt-2 flex justify-between items-center">
-        {needsLocation && (
-          <h2 className="text-2xl font-serif-custom font-black mb-1 text-black">
-            {photo.location || "Unknown Location"}
-          </h2>
-        )}
-        <p className="text-xl font-serif-custom font-bold mb-1 text-right text-black">
-          {photo.metadata?.date_taken && needsLocation
-            ? new Date(photo.metadata.date_taken).toLocaleString("en-US", {
+        <p className="text-2xl font-serif-custom font-bold mb-1 text-right text-black">
+          {photo.metadata?.date_taken &&
+            new Date(photo.metadata.date_taken).toLocaleString("en-US", {
                 hour: "numeric",
                 minute: "numeric",
                 hour12: true,
@@ -46,7 +41,7 @@ export default function PhotoCard({ photo, index, needsLocation }: { photo: Phot
                 day: "2-digit",
                 year: "numeric",
               })
-            : ""}
+            }
         </p>
       </div>
 
