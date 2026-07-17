@@ -24,7 +24,7 @@ export default function FinanceDashboard({
   setPage
 }: FinanceDashboardProps) {
     return(
-        <>
+        <div className='flex w-screen h-screen'>
                     <h1
                         className="font-serif-custom text-3xl"
                     >
@@ -289,6 +289,6 @@ export default function FinanceDashboard({
                             </div>
                         </div>
                     </div>
-                    </>
+                    </div>
     )
 }

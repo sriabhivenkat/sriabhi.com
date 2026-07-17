@@ -158,8 +158,9 @@ export default function Home() {
           </div>
 
           <div className="hidden md:flex items-end space-x-3">
-            {["resume", "github", "linkedin"].map((label, i) => {
+            {["resume", "github", "linkedin", "internal"].map((label, i) => {
               const hrefs: Record<string, string> = {
+                internal: "/internal",
                 resume: "https://home.sriabhi.com/api/v1/files/blog/sriabhinandan_venkataraman_resume_final.pdf",
                 github: "https://github.com/sriabhivenkat",
                 linkedin: "https://www.linkedin.com/in/sriabhi-venkat/",

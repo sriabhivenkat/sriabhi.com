@@ -13,9 +13,12 @@ export interface Metadata {
   film?: boolean;
   film_type?: string;
   shutter_speed?: string;
+  description?: string;
+  geotag?: number[];
 }
 
 export interface PhotoWithMetadata {
+  pid: string;
   url: string;
   metadata: Metadata | null;
   location?: string;
@@ -40,20 +43,6 @@ interface PhotoStore {
   fetchFolder: (folder: string) => Promise<void>;
 }
 
-const DEFAULT_SUBFOLDERS = [
-  "trips/banff",
-  "trips/dallas",
-  "trips/nyc",
-  "trips/japan",
-  "trips/yosemite",
-  "trips/alaska",
-  "trips/rainier",
-  "trips/austin",
-  "trips/nola",
-  "trips/cold_springs",
-  "trips/oklahoma",
-  "trips/new_mexico"
-];
 
 export const usePhotoStore = create<PhotoStore>((set, get) => ({
   photoData: {},

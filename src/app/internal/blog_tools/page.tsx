@@ -267,13 +267,22 @@ export default function Page() {
                                             tr: ({node, ...props}) => <tr className="border-b border-gray-300" {...props} />,
                                             th: ({node, ...props}) => <th className="border border-gray-300 px-4 py-2 text-left font-bold" {...props} />,
                                             td: ({node, ...props}) => <td className="border border-gray-300 px-4 py-2" {...props} />,
-                                            img: ({node, ...props}) => (
-                                                <img 
-                                                    className="max-w-full max-h-96 rounded-lg my-4 mx-auto block" 
-                                                    {...props} 
-                                                    alt={props.alt || 'Image'}
-                                                />
-                                            )
+                                            img: ({ node, ...props }) => (
+                                                <div className="flex justify-center my-6">
+                                                <figure className="inline-block">
+                                                    <img
+                                                    className="max-w-full max-h-96 rounded-lg block"
+                                                    {...props}
+                                                    alt={props.alt || "Image"}
+                                                    />
+                                                    {props.title && (
+                                                    <figcaption className="mt-2 text-left text-sm italic text-gray-500">
+                                                        {props.title}
+                                                    </figcaption>
+                                                    )}
+                                                </figure>
+                                                </div>
+                                            ),
                                         }}
                                     >
                                         {content}

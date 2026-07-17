@@ -19,9 +19,10 @@ export default function Page() {
     });
   }, [collections]);
 
-  const cards = collections.map(loc => ({
+  const real_photos = collections.filter((c) => c.grabPath != "iphone_photos")
+  const cards = real_photos.map(loc => ({
     ...loc,
-    coverUrl: photoData[loc.grabPath]?.coverUrl,
+    coverUrl: "https://home.sriabhi.com" + loc.cover_url,
     photoCount: photoData[loc.grabPath]?.total,
     lastUpdated: photoData[loc.grabPath]?.lastUpdated,
   })).sort((a, b) => {

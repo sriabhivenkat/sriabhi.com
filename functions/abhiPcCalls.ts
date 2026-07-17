@@ -7,8 +7,12 @@ import { PhotoUrlsResponse, PhotoWithMetadata } from "../hooks/usePhotoStore";
 const baseUrl = "https://home.sriabhi.com"
 
 export async function getAccessToken() {
-  console.log("URL: ", process.env.API_BASE_URL)
-  const res = await fetch('/api/access-token'); // hits your Next.js server, not Flask directly
+  const isServer = typeof window === 'undefined';
+  const url = isServer
+    ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/access-token`
+    : '/api/access-token';
+
+  const res = await fetch(url);
   const data = await res.json();
   return { access_token: data.access_token };
 }
@@ -132,6 +136,7 @@ export async function getPhotoUrls(subfolder: string, token: string, limit?: num
     const formatted: PhotoWithMetadata[] = files.map((file: any) => ({
       url: file.file_url[0] == "/" ? `${baseUrl}${file.file_url}` : `${baseUrl}/${file.file_url}`,
       metadata: file.metadata || null,
+      pid: file.pid,
     }));
 
     console.log(`Fetched photo metadata for ${subfolder}:`, formatted);

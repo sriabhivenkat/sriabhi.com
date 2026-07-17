@@ -20,14 +20,43 @@ export default function PlaidClientComponent() {
     if (!linkToken) {
         return <div>Missing link token. Please try again.</div>;
     }
-    const onSuccess = useCallback<PlaidLinkOnSuccess> (
-        async(public_token: string, metadata: PlaidLinkOnSuccessMetadata) => {
+    // const onSuccess = useCallback<PlaidLinkOnSuccess> (
+    //     async(public_token: string, metadata: PlaidLinkOnSuccessMetadata) => {
+    //         try {
+    //             const res = await fetch('/api/exchange-public-token', {
+    //                 method: 'POST',
+    //                 headers: { 'Content-Type': 'application/json' },
+    //                 body: JSON.stringify({ public_token, institution_name: metadata.institution?.name, institution_id: metadata.institution?.institution_id }),
+    //             });
+
+    //             setTitle('All done! You can close this window now.');
+    //         } catch (err) {
+    //             console.error('Plaid onSuccess error:', err);
+    //         }
+    //     },
+    //     []
+    // );
+    const onSuccess = useCallback<PlaidLinkOnSuccess>(
+        async (public_token: string, metadata: PlaidLinkOnSuccessMetadata) => {
             try {
-                const res = await fetch('/api/exchange-public-token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ public_token, institution_name: metadata.institution?.name, institution_id: metadata.institution?.institution_id }),
-                });
+                console.log('Update mode accounts:', metadata.accounts);
+
+                const savorAccount = metadata.accounts.find(
+                    (acc) => acc.mask === '1250'
+                );
+
+                if (savorAccount) {
+                    await fetch('/api/update-account-id', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            old_account_id: 'EMDO9vm5k7T6JNmRjo9Ls8akd09w4mCQr3kDD ',
+                            new_account_id: savorAccount.id,
+                        }),
+                    });
+                } else {
+                    console.error('Savor account (mask 0674) not found in relink response');
+                }
 
                 setTitle('All done! You can close this window now.');
             } catch (err) {

@@ -15,6 +15,7 @@ export default function Page() {
     const [path, setPath] = useState("");
     const [modal, setModal] = useState<ModalType>(null);
     const { collections, fetchCollections } = useCollectionStore();
+    const [uploadedCount, setUploadedCount] = useState(0);
 
     useEffect(() => {
         fetchCollections();
@@ -26,29 +27,53 @@ export default function Page() {
 
     const handleUpload = async () => {
         setModal(null);
-        setLoading(true);
-        if (path !== "") {
-            const { access_token } = await getAccessToken();
-            const formData = new FormData();
-            photos.forEach((photo) => formData.append("files", photo));
 
-            let modPath = path !== "iphone_photos" ? "trips/" + path : path;
-            formData.append("path", modPath);
-
-            const res = await fetch("https://home.sriabhi.com/api/v1/photo/upload_photos", {
-                method: "POST",
-                body: formData,
-                headers: { Authorization: `Bearer ${access_token}` },
-                credentials: "include",
-            });
-
-            await res.json();
-            setSuccessMessage(`Photos uploaded successfully!`);
-            setPhotos([]);
-        } else {
+        if (path === "") {
             alert("Add a path");
+            return;
         }
-        setLoading(false);
+
+        setLoading(true);
+        setUploadedCount(0);
+        setSuccessMessage("");
+
+        const { access_token } = await getAccessToken();
+        const modPath = path !== "iphone_photos" ? `trips/${path}` : path;
+
+        try {
+            for (let i = 0; i < photos.length; i++) {
+                const formData = new FormData();
+                formData.append("files", photos[i]);
+                formData.append("path", modPath);
+
+                const res = await fetch(
+                    "https://home.sriabhi.com/api/v1/photo/upload_photos",
+                    {
+                        method: "POST",
+                        body: formData,
+                        headers: {
+                            Authorization: `Bearer ${access_token}`,
+                        },
+                        credentials: "include",
+                    }
+                );
+
+                if (!res.ok) {
+                    throw new Error(`Failed to upload ${photos[i].name}`);
+                }
+
+                await res.json();
+                setUploadedCount(i + 1);
+            }
+
+            setSuccessMessage(`Successfully uploaded ${photos.length} photo${photos.length === 1 ? "" : "s"}!`);
+            setPhotos([]);
+        } catch (err) {
+            console.error(err);
+            alert("An error occurred while uploading.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleClear = () => {
@@ -58,10 +83,15 @@ export default function Page() {
     };
 
     const pathOptions = [
-        "iphone_photos",
-        ...collections.map(c => c.grabPath.split("/")[1])
-    ];
+        ...collections
+            .map(c => c.grabPath.startsWith("trips/")
+                ? c.grabPath.split("/")[1]
+                : c.grabPath
+            )
+    ]
 
+    console.log("PATHOPTIONS: ", pathOptions, collections)
+    
     return (
         <div className="flex min-h-screen p-3 bg-[#F3F1ED] flex-col">
             <Navbar />
@@ -137,14 +167,16 @@ export default function Page() {
                         onChange={(e) => setPath(e.target.value)}
                         className="w-full p-2 mb-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
                     />
-                    <div className="flex flex-wrap gap-x-2 gap-y-2 items-center justify-center">
+                    <div className="grid grid-cols-2 gap-2 w-full">
                         {pathOptions.map((item, index) => (
                             <div
-                                className={`min-h-10 min-w-40 ${path === item ? "bg-[#4D7C56]" : "bg-[#74A662]"} rounded-lg flex items-center justify-center hover:cursor-pointer`}
-                                key={index}
-                                onClick={() => setPath(path === item ? "" : item)}
+                            key={index}
+                            onClick={() => setPath(path === item ? "" : item)}
+                            className={`h-10 ${
+                                path === item ? "bg-[#24191B]" : "bg-[#3D2B2E]"
+                            } rounded-lg flex items-center justify-center cursor-pointer`}
                             >
-                                <p className="text-white">{item}</p>
+                            <p className="text-white">{item}</p>
                             </div>
                         ))}
                     </div>
@@ -152,6 +184,21 @@ export default function Page() {
                         <p className="text-green-600 text-md mt-auto mb-2">{successMessage}</p>
                     )}
                     <div className="mt-auto">
+                        {loading && (
+                            <div className="w-full my-2">
+                                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                                <span>Uploading photos...</span>
+                                <span>{uploadedCount} / {photos.length}</span>
+                                </div>
+
+                                <div className="w-full h-3 bg-gray-300 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-[#74A662] transition-all duration-200"
+                                    style={{ width: `${ photos.length > 0 ? (uploadedCount / photos.length) * 100 : 0}%` }}
+                                />
+                                </div>
+                            </div>
+                        )}
                         <button
                             className="bg-transparent text-black hover:text-white w-full p-2 rounded-md flex items-center justify-center hover:cursor-pointer border border-[#4D7C56] hover:bg-[#4D7C56] mb-2 disabled:opacity-50"
                             onClick={() => setModal("clear")}

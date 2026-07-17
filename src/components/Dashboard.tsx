@@ -144,11 +144,11 @@ export default function Dashboard({ token }: DashboardProps) {
         {/* Action buttons */}
         <div className="mt-4">
           <h1 className="text-black text-md">Quick actions</h1>
-          <div className="flex mt-2 gap-x-2">
+          <div className="grid grid-cols-2 gap-2 mt-2 sm:flex sm:gap-x-2">
             {actions.map((item, index) => (
               <div
                 key={index}
-                className={`min-h-28 w-60 border border-black p-2 bg-[#F4F2F3] rounded-md hover:cursor-pointer ${selectedAction === item ? "bg-gray-500" : ""}`}
+                className={`min-h-28 w-full sm:w-60 border border-black p-2 bg-[#F4F2F3] rounded-md hover:cursor-pointer ${selectedAction === item ? "bg-gray-500" : ""}`}
                 onClick={() => setSelectedAction(item)}
               >
                 <div className="mb-1">{item.icon()}</div>

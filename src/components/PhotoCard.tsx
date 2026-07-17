@@ -43,6 +43,13 @@ export default function PhotoCard({ photo, index, needsLocation }: { photo: Phot
               })
             }
         </p>
+        {photo.metadata?.description && photo.metadata?.geotag && (
+          <div className="flex border border-[#E8E2E4] rounded-md p-1 px-2 text-center">
+            <p className="text-xs text-[#7A6B70]">
+              <span className="font-bold text-[#1B998B]">New!</span> Photo Notes.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Pills */}

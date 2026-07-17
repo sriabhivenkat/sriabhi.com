@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { getCollections } from '../functions/abhiPcCalls';
 
-export interface PhotoLocation {
+export interface Collection {
   name: string;
   grabPath: string;
+  collection_id?: string;
+  cover_url?: string;
 }
 
 interface CollectionStore {
-  collections: PhotoLocation[];
+  collections: Collection[];
   loading: boolean;
   error: string | null;
   fetchCollections: () => Promise<void>;

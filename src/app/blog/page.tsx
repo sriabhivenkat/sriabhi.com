@@ -43,6 +43,16 @@ export default function Page() {
   const latest = posts[0];
   const others = posts.slice(1);
 
+  const mapBlogType = (post: Post) => {
+    if (post.blog_type === 1) {
+      return "Abhi Thinks Too Much"
+    } else if (post.blog_type == 2) {
+      return "PROJECT"
+    } else if (post.blog_type == 3) {
+      return "MISCELLANEOUS"
+    } 
+    return "TRIP"
+  }
   return (
     <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#F4F2F3] flex flex-col">
       <Navbar />
@@ -109,28 +119,40 @@ export default function Page() {
                       </div>
                     </div>
                   ))
-                : others.map((post) => (
-                    <Link key={post.id} href={`/blog/${post.id}`} className="flex flex-col rounded-md overflow-hidden">
-                      <div className="relative h-40 w-full bg-gray-300 rounded-lg overflow-hidden">
-                        {!loadedImages[post.id] && (
-                          <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 bg-[length:200%_100%]" />
-                        )}
-                        <Image
-                          src={post.cover_photo || ""}
-                          alt="cover"
-                          fill
-                          className={`object-cover rounded-lg transition-opacity duration-700 ${loadedImages[post.id] ? "opacity-100" : "opacity-0"}`}
-                          onLoad={() => setLoadedImages(prev => ({ ...prev, [post.id]: true }))}
-                        />
-                      </div>
-                      <div className="py-2 flex justify-between items-start">
-                        <div className="max-w-[70%]">
-                          <h3 className="text-xl font-serif-custom text-black">{post.title}</h3>
-                          <p className="text-sm text-black line-clamp-1">{post.subtitle}</p>
+                : others.map((post, index) => (
+                    <Link
+                      key={post.id}
+                      href={`/blog/${post.id}`}
+                      className={`flex flex-col overflow-hidden justify-center border-gray-200 ${
+                        index === 0 ? "border-t-2" : ""
+                      } border-b-2`}
+                    >
+                      <div className="p-1 flex justify-between items-start">
+                        <div className="flex w-2/3 flex-col">
+                          <div>
+                            <h3 className="text-xl font-serif-custom text-black font-black">{post.title}</h3>
+                            <p className="text-sm text-black line-clamp-2">{post.subtitle}</p>
+                            <span className="rounded bg-gray-400 px-2.5 py-0.75 text-[10px] font-semibold uppercase tracking-wide text-white">
+                              {mapBlogType(post)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-sm text-black">
+                            <p className="font-serif-custom">
+                              {post.date_created?.toLocaleDateString()} · {post.minute_read} MIN READ
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right text-sm text-black">
-                          <p className="font-serif-custom">{post.date_created?.toLocaleDateString()}</p>
-                          <p className="text-xs text-gray-600">{post.minute_read} min</p>
+                        <div className="relative h-20 w-20 shrink-0 bg-gray-300 rounded-lg overflow-hidden">
+                          {!loadedImages[post.id] && (
+                            <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 bg-[length:200%_100%]" />
+                          )}
+                          <Image
+                            src={post.cover_photo || ""}
+                            alt="cover"
+                            fill
+                            className={`object-cover rounded-lg transition-opacity duration-700 ${loadedImages[post.id] ? "opacity-100" : "opacity-0"}`}
+                            onLoad={() => setLoadedImages(prev => ({ ...prev, [post.id]: true }))}
+                          />
                         </div>
                       </div>
                     </Link>
