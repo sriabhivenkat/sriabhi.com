@@ -7,6 +7,7 @@
     import { ChartCandlestick, ClipboardClock, Cog, LucideArrowDownRightFromCircle, LucideArrowUpRightFromCircle, NotebookTabs, PiggyBank, Receipt } from "lucide-react";
     import Link from "next/link";
     import FinanceAccountsPage, { Account } from "@/components/FinanceAccountsPage";
+import DashNav from "@/components/DashNav";
 
     export default function Page() {
     const [token, setToken] = useState<string | null>(null);
@@ -97,6 +98,7 @@
         cutoff.setDate(cutoff.getDate() - 30);
         return itemDate >= cutoff;
     });
+    console.log("trans", transactions)
     const lastDayTransactions = useMemo(() => {
         if (transactions.length === 0) return [];
 
@@ -107,11 +109,11 @@
 
         return transactions.filter((tx: any) => tx.transDate.slice(0, 10) === mostRecentDate);
     }, [transactions]);
-    console.log("LST: ", lastDayTransactions)
     const tiles = [
         {
             "title": "Accounts",
             icon: () => <PiggyBank size={30} color="#143109" />,
+            href: "finance_tools/accounts",
             content: () => {
                 const institutionCounts = accounts.reduce((acc: Record<string, number>, account: any) => {
                     const name = account.institution_name;
@@ -144,6 +146,7 @@
         {
             "title": "Transactions",
             icon: () => <Receipt size={30} color="#9999C3" />,
+            href: "finance_tools/transactions",
             content: () => {
                 const rawSum = lastDayTransactions.reduce((sum: number, tx: any) => sum + tx.amount, 0);
                 const sumVal = rawSum.toLocaleString(undefined, { style: 'currency', currency: 'USD' })
@@ -208,6 +211,7 @@
         {
             "title": "Investments",
             icon: () => <ChartCandlestick size={30} color="#DE8F6E" />,
+            href: "finance_tools/investments",
             content: () => {
                 const investments = accounts.filter((a) => a.type === 'investment').reduce((sum: any, acc: Account) => sum + acc.current_balance, 0)
                 return(
@@ -317,28 +321,9 @@
 
     return token ? (
         <div className="bg-[#F4F2F3] h-screen w-screen sm:overflow-hidden flex p-2">
+            <DashNav />
             {page === "dashboard" && (
-            <div className="flex flex-col w-full h-full">
-                <div
-                    className="w-full border-black flex justify-between"
-                >
-                    <div className="flex flex-col gap-0">
-                        <h1 className="text-[#3D2B2E] font-serif-custom text-2xl sm:text-3xl leading-tight">
-                            Bookkeeper
-                        </h1>
-                        <p
-                            className="text-[#3D2B2E] font-serif-custom text-sm"
-                        >
-                            by sriabhi.com
-                        </p>
-                    </div>
-                    <Link
-                        href={'/internal'}
-                        className="p-2 flex text-black text-xs items-center rounded-md hover:cursor-pointer bg-[#3D2B2E] text-white"
-                    >
-                        Return to dashboard
-                    </Link>
-                </div>
+            <div className="flex flex-col w-full h-full pt-10">
                 <div className=" text-[#3D2B2E] flex-1 flex flex-col sm:grid sm:grid-cols-2 sm:grid-rows-2 gap-2 mt-2 min-h-0">
 
                 {/* Burn Rate */}
@@ -534,11 +519,12 @@
                         </div>
                     </div>
                     <div
-                        className="w-full sm:col-span-2 grid grid-cols-2 grid-rows-3 sm:grid-cols-3 sm:grid-rows-2 gap-2 sm:mb-3"
-                    >
+                    className="w-full sm:col-span-2 grid grid-cols-2 grid-rows-3 sm:grid-cols-3 sm:grid-rows-2 gap-2 sm:mb-1"
+                >
                         {tiles.map((tile, index) => (
-                            <div 
+                            <Link 
                                 key={index}
+                                href={tile.href || ""}
                                 className="
                                     rounded-lg p-2 h-40 sm:h-full
                                     bg-white/10
@@ -561,7 +547,7 @@
                                         {tile.content()}
                                     </div>
                                 )}
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 </div>

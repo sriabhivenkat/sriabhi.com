@@ -17,6 +17,7 @@ export interface Account {
     official_name: string;
     subtype: string;
     type: string;
+    last_updated: string;
 }
 
 interface AccountPageProps {

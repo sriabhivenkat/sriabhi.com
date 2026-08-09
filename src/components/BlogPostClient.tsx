@@ -13,16 +13,15 @@ import { AArrowDown, ArrowDown, ChevronDown} from "lucide-react";
 import { usePhotoStore } from "../../hooks/usePhotoStore";
 import { Collection, useCollectionStore } from "../../hooks/useCollectionsStore";
 import Link from "next/link";
+import TextAnnotator from "./TextAnnotator";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
-interface GeoTag {
-    offset: number;
-    heading: string;
-    headingId: string;
-    level: number;
-    lat: number;
-    lng: number;
+interface GeoMarker {
+  lat: number;
+  lng: number;
+  label: string;
 }
+
 interface Post {
   file_url: string;
   title?: string;
@@ -32,7 +31,7 @@ interface Post {
   date_created?: Date;
   blog_type?: number;
   id: string;
-  geotags?: GeoTag[];
+  geotags?: GeoMarker[];
   collection_id?: string;
 }
 
@@ -43,15 +42,7 @@ function scrollToHeading(headingId: string) {
   }
 }
 
-function BlogGeoMap({
-  geotags,
-  contentRef,
-  contentLengthRef,
-}: {
-  geotags?: GeoTag[];
-  contentRef: React.RefObject<HTMLDivElement | null>;
-  contentLengthRef: React.RefObject<number>;
-}) {
+function BlogGeoMap({ geotags }: { geotags?: GeoMarker[] }) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
@@ -74,7 +65,6 @@ function BlogGeoMap({
     const bounds = new mapboxgl.LngLatBounds();
 
     map.on("load", () => {
-      // Draw route line connecting markers
       if (geotags.length > 1) {
         map.addSource("route", {
           type: "geojson",
@@ -82,10 +72,7 @@ function BlogGeoMap({
             type: "Feature",
             geometry: {
               type: "LineString",
-              coordinates: geotags.map((tag) => [
-                tag.lng,
-                tag.lat,
-              ]),
+              coordinates: geotags.map((tag) => [tag.lng, tag.lat]),
             },
             properties: {},
           },
@@ -104,41 +91,20 @@ function BlogGeoMap({
       }
 
       geotags.forEach((tag) => {
-        const marker = new mapboxgl.Marker({ color: "#3D2B2E" })
-          .setLngLat([tag.lng, tag.lat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 })
-              .setHTML(`<strong>${tag.heading}</strong>`)
-          )
-          .addTo(map);
+        const marker = new mapboxgl.Marker({ color: "#3D2B2E" }).setLngLat([tag.lng, tag.lat]);
 
-        marker.getElement().style.cursor = "pointer";
+        if (tag.label) {
+          marker.setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(`<strong>${tag.label}</strong>`)
+          );
+        }
 
-        marker.getElement().addEventListener("click", () => {
-          const el = contentRef.current;
-          const totalLength = contentLengthRef.current;
-
-          if (!el || !totalLength) return;
-
-          const ratio = Math.min(Math.max(tag.offset / totalLength, 0), 1);
-          const elementTop = el.getBoundingClientRect().top + window.scrollY;
-          const targetScroll =
-            elementTop + ratio * el.scrollHeight - 150;
-
-          window.scrollTo({
-            top: targetScroll,
-            behavior: "smooth",
-          });
-        });
-
+        marker.addTo(map);
         bounds.extend([tag.lng, tag.lat]);
       });
 
       if (geotags.length > 1) {
-        map.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 14,
-        });
+        map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
       }
     });
 
@@ -153,37 +119,16 @@ function BlogGeoMap({
   return (
     <div
       ref={mapContainerRef}
-      className="
-      w-full
-      h-56
-      lg:h-[calc(75vh-120px)]
-      rounded-lg
-      overflow-hidden
-      "
+      className="w-full h-56 lg:h-[calc(75vh-120px)] rounded-lg overflow-hidden"
     />
   );
 }
-
 export default function BlogPostClient({ id }: { id: string }) {
   const [content, setContent] = useState<string>("");
   const [post, setPost] = useState<Post>();
   const [token, setToken] = useState<string>("");
   const [loaded, setLoaded] = useState(false);
-  const contentRef = useRef<HTMLDivElement | null>(null);
-  const contentLengthRef = useRef<number>(0);
 
-  useEffect(() => {
-    contentLengthRef.current = content.length;
-  }, [content]);
-  function scrollToOffset(offset: number, contentRef: React.RefObject<HTMLDivElement>, totalLength: number) {
-    const el = contentRef.current;
-    if (!el || totalLength === 0) return;
-
-    const ratio = offset / totalLength;
-    const targetScroll = ratio * el.scrollHeight;
-
-    el.scrollTo({ top: targetScroll, behavior: "smooth" });
-  }
   // Fetch token + list of posts
   useEffect(() => {
     const main = async () => {
@@ -303,7 +248,7 @@ export default function BlogPostClient({ id }: { id: string }) {
                   tripInfoExpanded ? "max-h-[600px] opacity-100 mt-2" : "max-h-0 opacity-0"
                 }`}
               >
-                {showGeoMap && <BlogGeoMap geotags={post?.geotags} contentRef={contentRef} contentLengthRef={contentLengthRef} />}
+                {showGeoMap && <BlogGeoMap geotags={post?.geotags} />}
                 {post?.collection_id && (
                   <Link
                     className="bg-white rounded-lg w-full mt-2 p-2 flex items-center gap-3"
@@ -330,7 +275,7 @@ export default function BlogPostClient({ id }: { id: string }) {
               </div>
             </div>
           )}
-          <div ref={contentRef} className="flex flex-col flex-1 mx-auto prose prose-lg text-black max-w-full overflow-x-hidden">
+          <div className="flex flex-col flex-1 mx-auto prose prose-lg text-black max-w-full overflow-x-hidden">
               <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -410,7 +355,7 @@ export default function BlogPostClient({ id }: { id: string }) {
         </div>
         {showGeoMap && (
            <div className="w-1/3 h-1/2 sticky top-14 overflow-hidden">
-              <BlogGeoMap geotags={post?.geotags} contentRef={contentRef} contentLengthRef={contentLengthRef} />
+              <BlogGeoMap geotags={post?.geotags} />
               {post?.collection_id && (
               <Link className="bg-white rounded-lg w-full mt-2 p-2 flex items-center gap-3" href={`/photos/${bindedCol?.grabPath.split("/")[1]}`}>
                 <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">

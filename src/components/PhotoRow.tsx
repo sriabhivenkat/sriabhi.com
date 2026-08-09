@@ -67,6 +67,10 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
         placeMarker(e.lngLat, map);
       });
 
+      // Handles the map mounting inside a still-animating expand panel,
+      // where the container's initial measured size can be off.
+      requestAnimationFrame(() => map.resize());
+
       mapRef.current = map;
     }
 
@@ -133,11 +137,18 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
     }
   };
 
+  const charCountColor =
+    descriptionDraft.length >= 300
+      ? "text-red-500"
+      : descriptionDraft.length >= 250
+      ? "text-yellow-500"
+      : "text-[#7A6B70]";
+
   return (
-    <div className="border-b border-[#F0EBEC] px-4 py-3 last:border-b-0">
-      <div className="flex items-center gap-4">
-        <div className="w-12 text-sm text-[#6F6065]">{index + 1}</div>
-        <div className="relative h-14 w-14 overflow-hidden rounded-lg bg-[#F4F2F3]">
+    <div className="border-b border-[#F0EBEC] px-3 sm:px-4 py-3 last:border-b-0">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className="hidden sm:block w-8 shrink-0 text-sm text-[#6F6065]">{index + 1}</div>
+        <div className="relative h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-lg bg-[#F4F2F3]">
           <Image
             src={photo.url}
             alt={`${photo.collectionName} photo ${index + 1}`}
@@ -151,45 +162,38 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
           {photo.metadata?.date_taken ? (
             <p className="text-xs text-[#7A6B70]">{new Date(photo.metadata.date_taken).toLocaleString()}</p>
           ) : null}
-          <div className="flex gap-x-1 mt-1">
+          <div className="flex flex-wrap gap-1 mt-1">
               {photo.metadata?.description &&
-                <p className="text-xs text-[#7A6B70] border border-[#E8E2E4] rounded-md p-1 px-2 text-center">
+                <p className="text-[10px] sm:text-xs text-[#7A6B70] border border-[#E8E2E4] rounded-md py-0.5 px-1.5 sm:p-1 sm:px-2 text-center">
                   Has description!
                 </p>
               }
               {photo.metadata?.geotag &&
-                <p className="text-xs text-[#7A6B70] border border-[#E8E2E4] rounded-md p-1 px-2 text-center">
+                <p className="text-[10px] sm:text-xs text-[#7A6B70] border border-[#E8E2E4] rounded-md py-0.5 px-1.5 sm:p-1 sm:px-2 text-center">
                   Has geotag!
                 </p>
               }
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
-            <div className="flex shrink-0 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                console.log("PHTOO: ", photo);
-                setIsExpanded((prev) => !prev)
-              }}
-              className="cursor-pointer rounded-lg bg-[#3D2B2E] px-3 py-1.5 text-sm text-white transition hover:bg-[#2F2428]"
-            >
-              {isExpanded ? "Hide information" : "Add information"}
-            </button>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setIsExpanded((prev) => !prev)}
+          className="shrink-0 cursor-pointer rounded-lg bg-[#3D2B2E] px-2.5 py-1.5 sm:px-3 text-xs sm:text-sm text-white transition hover:bg-[#2F2428]"
+        >
+          {isExpanded ? "Hide" : "Add info"}
+        </button>
       </div>
 
       {isExpanded ? (
-        <div className="mt-3 rounded-xl border border-[#E8E2E4] bg-[#F8F6F7] flex flex-col p-4">
-          <div className="flex gap-x-3">
+        <div className="mt-3 rounded-xl border border-[#E8E2E4] bg-[#F8F6F7] flex flex-col p-3 sm:p-4">
+          <div className="flex flex-col lg:flex-row gap-3">
             <div
-              className={`relative overflow-hidden rounded-lg bg-[#F4F2F3] ${
+              className={`relative overflow-hidden rounded-lg bg-[#F4F2F3] w-full aspect-video sm:aspect-[4/3] lg:aspect-auto lg:w-auto ${
                 orientation === "portrait"
-                  ? "flex-[0.7] aspect-[3/4]"
+                  ? "lg:flex-[0.7] lg:aspect-[3/4]"
                   : orientation === "landscape"
-                  ? "flex-[1.4] aspect-[4/3]"
-                  : "flex-[1] aspect-square"
+                  ? "lg:flex-[1.4] lg:aspect-[4/3]"
+                  : "lg:flex-[1] lg:aspect-square"
               }`}
             >
               <Image
@@ -197,7 +201,7 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
                 alt={`${photo.collectionName} photo ${index + 1}`}
                 fill
                 className="object-cover"
-                sizes="(max-width: 768px) 100vw, 300px"
+                sizes="(max-width: 1024px) 100vw, 300px"
                 onLoad={(e) => {
                   const img = e.currentTarget;
                   if (img.naturalWidth > img.naturalHeight) {
@@ -210,48 +214,52 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
                 }}
               />
             </div>
-            <div className="flex flex-[1] flex-col gap-3 border border-gray-300 rounded-md p-2 text-black">
+
+            <div className="lg:hidden border-t border-[#E8E2E4]" />
+
+            <div className="flex flex-col flex-1 lg:flex-[1] gap-1.5 text-black">
               <textarea
                 value={descriptionDraft}
                 onChange={(e) => setDescriptionDraft(e.target.value)}
                 placeholder="Enter description..."
-                className="border border-gray-500 p-2 text-black rounded-lg w-full text-sm bg-[#F4F2F3] flex flex-1 resize-none"
+                className="border border-gray-300 p-2 text-black rounded-lg w-full text-sm bg-[#F4F2F3] resize-none min-h-24 lg:min-h-0 lg:flex-1"
                 maxLength={300}
               />
-              <p className={`text-xs ${descriptionDraft.length >= 250 ? descriptionDraft.length >= 300 ? 'text-red-500' :  'text-yellow-500' :  'text-[#7A6B70]'} `}>{descriptionDraft.length}/300</p>
+              <p className={`text-xs ${charCountColor}`}>{descriptionDraft.length}/300</p>
             </div>
-            <div className="w-px bg-gray-300" />
-            <div className="flex flex-[2] flex-col gap-3 rounded-md text-black">
+
+            <div className="hidden lg:block w-px bg-gray-300" />
+            <div className="lg:hidden border-t border-[#E8E2E4]" />
+
+            <div className="flex flex-col flex-1 lg:flex-[2] gap-2 text-black">
               <div
                 key={rowKey}
                 ref={mapContainerRef}
-                className="h-64 h-full w-full rounded-lg"
+                className="h-56 lg:h-full w-full rounded-lg"
               />
-              <div className="flex items-center">
-              <p className="text-xs text-[#7A6B70]">
-                {geotagPoint
-                  ? `Selected: ${geotagPoint.lat.toFixed(6)}, ${geotagPoint.lng.toFixed(6)}`
-                  : "No point selected yet"}
-              </p>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-[#7A6B70] truncate">
+                  {geotagPoint
+                    ? `Selected: ${geotagPoint.lat.toFixed(6)}, ${geotagPoint.lng.toFixed(6)}`
+                    : "No point selected yet"}
+                </p>
                 {geotagPoint ? (
                   <button
                     type="button"
                     onClick={handleClearMarker}
-                    className="cursor-pointer text-xs text-[#7A6B70] underline hover:text-[#4B3940] ml-2"
+                    className="shrink-0 cursor-pointer text-xs text-[#7A6B70] underline hover:text-[#4B3940]"
                   >
                     Clear
                   </button>
                 ) : null}
               </div>
-              </div>
             </div>
           </div>
-          <div className="mt-3 flex justify-end gap-2">
+          <div className="mt-3 flex justify-end">
             <button
               type="button"
               onClick={handleSave}
-              className="cursor-pointer rounded-lg bg-[#3D2B2E] px-4 py-2 text-sm text-white transition hover:bg-[#2F2428]"
+              className="w-full sm:w-auto cursor-pointer rounded-lg bg-[#3D2B2E] px-4 py-2 text-sm text-white transition hover:bg-[#2F2428]"
             >
               Save
             </button>

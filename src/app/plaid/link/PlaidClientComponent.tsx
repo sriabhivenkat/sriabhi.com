@@ -39,25 +39,16 @@ export default function PlaidClientComponent() {
     const onSuccess = useCallback<PlaidLinkOnSuccess>(
         async (public_token: string, metadata: PlaidLinkOnSuccessMetadata) => {
             try {
-                console.log('Update mode accounts:', metadata.accounts);
-
-                const savorAccount = metadata.accounts.find(
-                    (acc) => acc.mask === '1250'
-                );
-
-                if (savorAccount) {
-                    await fetch('/api/update-account-id', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            old_account_id: 'EMDO9vm5k7T6JNmRjo9Ls8akd09w4mCQr3kDD ',
-                            new_account_id: savorAccount.id,
-                        }),
-                    });
-                } else {
-                    console.error('Savor account (mask 0674) not found in relink response');
-                }
-
+                const res = await fetch('/api/swap-access-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        public_token,
+                        existing_item_id: '80eJMv0qEmsbbnQmn9JJcZ7OEpkbdwHy3KkKp',
+                    }),
+                });
+                const data = await res.json();
+                console.log('Swap result:', data);
                 setTitle('All done! You can close this window now.');
             } catch (err) {
                 console.error('Plaid onSuccess error:', err);

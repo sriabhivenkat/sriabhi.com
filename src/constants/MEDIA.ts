@@ -118,6 +118,11 @@ export const MOVIES = [
     movieYear: "2016"
   },
   {
+    title: "Your Name",
+    cover: "https://m.media-amazon.com/images/I/517sA+2VRQL._AC_.jpg",
+    movieYear: "2016"
+  },
+  {
     title: "The Secret Life Of Walter Mitty",
     cover: "https://m.media-amazon.com/images/I/611oSyhC4uL._AC_SX679_.jpg",
     movieYear: "2013"
@@ -131,16 +136,6 @@ export const MOVIES = [
     title: "Good Will Hunting",
     cover: "https://m.media-amazon.com/images/I/71JBbULtGSL._AC_SY879_.jpg",
     movieYear: "1997"
-  },
-  {
-    title: "Your Name",
-    cover: "https://m.media-amazon.com/images/I/517sA+2VRQL._AC_.jpg",
-    movieYear: "2016"
-  },
-  {
-    title: "The Wild Robot",
-    cover: "https://a.ltrbxd.com/resized/film-poster/1/0/7/1/1/9/6/1071196-the-wild-robot-0-2000-0-3000-crop.jpg?v=a70bdbaea0",
-    movieYear: "2024"
   },
   {
     title: "We Live In Time",
@@ -205,13 +200,5 @@ export const ALBUMS = [
     releaseYear: "2026",
     favoriteSong: "Orbiter",
     favoriteSongLink: "https://open.spotify.com/track/77fL8ATR0dpUDLI0XLmDBV?si=f245757cf40b4ff6"
-  },
-  {
-    title: "bones",
-    artist: "Rainbow Kitten Surprise",
-    cover: "https://i.scdn.co/image/ab67616d0000b2732b627d9fddf2ef3a2d4a3180",
-    releaseYear: "2025",
-    favoriteSong: "100 Summers",
-    favoriteSongLink: "https://open.spotify.com/track/5jpT2b5gkbfaGIfMsXoKK6?si=cfae1019d02b4952"
   },
 ]

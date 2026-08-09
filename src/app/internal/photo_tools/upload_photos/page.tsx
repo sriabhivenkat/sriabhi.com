@@ -3,8 +3,16 @@ import Navbar from "@/components/Navbar";
 import React, { useEffect, useState, useRef } from "react";
 import { getAccessToken } from "../../../../../functions/abhiPcCalls";
 import { useCollectionStore } from "../../../../../hooks/useCollectionsStore";
+import { UploadCloud, X, Sparkles, CheckCircle2 } from "lucide-react";
+import DashNav from "@/components/DashNav";
 
 type ModalType = "upload" | "clear" | null;
+
+function formatBytes(bytes: number) {
+    if (bytes === 0) return "0 MB";
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(1)} MB`;
+}
 
 export default function Page() {
     const [photos, setPhotos] = useState<File[]>([]);
@@ -82,6 +90,10 @@ export default function Page() {
         setSuccessMessage("");
     };
 
+    const removePhoto = (index: number) => {
+        setPhotos((prev) => prev.filter((_, i) => i !== index));
+    };
+
     const pathOptions = [
         ...collections
             .map(c => c.grabPath.startsWith("trips/")
@@ -90,16 +102,16 @@ export default function Page() {
             )
     ]
 
-    console.log("PATHOPTIONS: ", pathOptions, collections)
-    
+    const isExistingCollection = path !== "" && pathOptions.includes(path);
+
     return (
-        <div className="flex min-h-screen p-3 bg-[#F3F1ED] flex-col">
-            <Navbar />
+        <div className="flex min-h-screen p-3 sm:p-6 bg-[#F3F1ED] flex-col">
+            <DashNav />
 
             {/* Modal */}
             {modal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-                    <div className="bg-white rounded-xl p-6 w-80 shadow-xl flex flex-col gap-4">
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl flex flex-col gap-4">
                         <h2 className="text-xl font-serif-custom font-black text-black">
                             {modal === "upload" ? "Upload photos?" : "Clear selection?"}
                         </h2>
@@ -111,13 +123,17 @@ export default function Page() {
                         </p>
                         <div className="flex gap-2">
                             <button
-                                className="flex-1 p-2 rounded-md border border-gray-300 text-black hover:bg-gray-100"
+                                className="flex-1 p-2 rounded-lg border border-gray-300 text-black hover:bg-gray-100 transition-colors"
                                 onClick={() => setModal(null)}
                             >
                                 Cancel
                             </button>
                             <button
-                                className="flex-1 p-2 rounded-md bg-[#74A662] hover:bg-[#4D7C56] text-white"
+                                className={`flex-1 p-2 rounded-lg text-white transition-colors ${
+                                    modal === "upload"
+                                        ? "bg-[#3D2B2E] hover:bg-[#6B4C51]"
+                                        : "bg-red-500 hover:bg-red-600"
+                                }`}
                                 onClick={modal === "upload" ? handleUpload : handleClear}
                             >
                                 Confirm
@@ -127,26 +143,69 @@ export default function Page() {
                 </div>
             )}
 
-            <div className="items-start mb-2 lg:mt-10 mt-12">
-                <div className="flex w-full justify-between">
-                    <h1 className="text-3xl font-serif-custom font-black text-black">Upload Photos</h1>
-                </div>
+            <div className="items-start mb-4 lg:mt-10 mt-12">
+                <h1 className="text-3xl font-serif-custom font-black text-black">Upload Photos</h1>
+                <p className="text-sm text-black/60 mt-1">
+                    Add to an existing collection, or start a new one.
+                </p>
             </div>
-            <div className="flex flex-1">
-                <div className="w-3/4 flex p-2 flex-col" onClick={() => fileInputRef.current?.click()}>
-                    <h1 className="text-md text-black">
-                        {photos.length === 0 ? "Click anywhere to select" : `${photos.length} ${photos.length === 1 ? "photo selected" : "photos selected"}`}
-                    </h1>
-                    <div className="flex flex-wrap gap-x-2 gap-y-2 mt-2">
-                        {photos.map((file, index) => (
-                            <img
-                                key={index}
-                                src={URL.createObjectURL(file)}
-                                alt={file.name}
-                                className="max-h-70 object-contain rounded-lg"
-                                onLoad={(e) => URL.revokeObjectURL((e.target as HTMLImageElement).src)}
-                            />
-                        ))}
+
+            <div className="flex flex-col lg:flex-row gap-4 flex-1">
+                {/* Photo picker */}
+                <div className="w-full lg:w-3/4 flex flex-col">
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`rounded-2xl bg-white border-2 border-dashed p-6 cursor-pointer transition-colors ${
+                            photos.length === 0
+                                ? "border-gray-300 hover:border-[#3D2B2E] flex flex-col items-center justify-center text-center min-h-[280px]"
+                                : "border-gray-200 hover:border-[#3D2B2E]"
+                        }`}
+                    >
+                        {photos.length === 0 ? (
+                            <>
+                                <UploadCloud size={36} className="text-[#3D2B2E] mb-2" />
+                                <p className="text-black font-medium">Click to select photos</p>
+                                <p className="text-black/50 text-sm mt-1">or drag and drop</p>
+                            </>
+                        ) : (
+                            <div className="flex items-baseline justify-between mb-3">
+                                <p className="text-sm font-medium text-black">
+                                    {photos.length} photo{photos.length === 1 ? "" : "s"} selected
+                                </p>
+                                <p className="text-xs text-black/50">
+                                    {formatBytes(totalFileSize)} total
+                                </p>
+                            </div>
+                        )}
+
+                        {photos.length > 0 && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                {photos.map((file, index) => {
+                                    const url = URL.createObjectURL(file);
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <img
+                                                src={url}
+                                                alt={file.name}
+                                                className="w-full h-full object-cover"
+                                                onLoad={() => URL.revokeObjectURL(url)}
+                                            />
+                                            <button
+                                                onClick={() => removePhoto(index)}
+                                                className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                aria-label={`Remove ${file.name}`}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                     <input
                         type="file"
@@ -154,62 +213,103 @@ export default function Page() {
                         accept="image/*"
                         ref={fileInputRef}
                         className="hidden"
-                        onChange={(e) => { if (e.target.files) setPhotos(Array.from(e.target.files)); }}
+                        onChange={(e) => { if (e.target.files) setPhotos((prev) => [...prev, ...Array.from(e.target.files!)]); }}
                     />
                 </div>
-                <div className="bg-gray-200 w-1/4 flex flex-col rounded-md p-2 min-h-44">
-                    <h1 className="text-2xl font-serif-custom font-black text-black">Menu</h1>
-                    <h1 className="text-md text-black">Choose collection</h1>
+
+                {/* Menu */}
+                <div className="w-full lg:w-1/4 flex flex-col rounded-2xl bg-white border border-neutral-200/70 shadow-sm p-4">
+                    <h2 className="text-xl font-serif-custom font-black text-black mb-1">
+                        Add to a collection
+                    </h2>
+
+                    {pathOptions.length > 0 && (
+                        <>
+                            <p className="text-xs font-medium uppercase tracking-wide text-black/40 mt-3 mb-1.5">
+                                Existing collections
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {pathOptions.map((item, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setPath(path === item ? "" : item)}
+                                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                            path === item
+                                                ? "bg-[#6B4C51] text-white"
+                                                : "bg-white border border-gray-200 text-black hover:bg-gray-50"
+                                        }`}
+                                    >
+                                        {item}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-2 my-3">
+                                <div className="h-px flex-1 bg-gray-200" />
+                                <span className="text-[10px] uppercase tracking-wide text-black/30">or</span>
+                                <div className="h-px flex-1 bg-gray-200" />
+                            </div>
+                        </>
+                    )}
+
+                    <p className="text-xs font-medium uppercase tracking-wide text-black/40 mb-1.5">
+                        New collection
+                    </p>
                     <input
                         type="text"
-                        placeholder="Create a new collection here"
+                        placeholder="e.g. summer-trip-2026"
                         value={path}
                         onChange={(e) => setPath(e.target.value)}
-                        className="w-full p-2 mb-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+                        className="w-full p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3D2B2E]/40 text-black text-sm"
                     />
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        {pathOptions.map((item, index) => (
-                            <div
-                            key={index}
-                            onClick={() => setPath(path === item ? "" : item)}
-                            className={`h-10 ${
-                                path === item ? "bg-[#24191B]" : "bg-[#3D2B2E]"
-                            } rounded-lg flex items-center justify-center cursor-pointer`}
-                            >
-                            <p className="text-white">{item}</p>
-                            </div>
-                        ))}
-                    </div>
-                    {successMessage !== "" && (
-                        <p className="text-green-600 text-md mt-auto mb-2">{successMessage}</p>
-                    )}
-                    <div className="mt-auto">
-                        {loading && (
-                            <div className="w-full my-2">
-                                <div className="flex justify-between text-xs text-gray-600 mb-1">
-                                <span>Uploading photos...</span>
-                                <span>{uploadedCount} / {photos.length}</span>
-                                </div>
 
-                                <div className="w-full h-3 bg-gray-300 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-[#74A662] transition-all duration-200"
-                                    style={{ width: `${ photos.length > 0 ? (uploadedCount / photos.length) * 100 : 0}%` }}
-                                />
+                    {path !== "" && (
+                        <div className="flex items-center gap-1.5 mt-2 text-xs">
+                            {isExistingCollection ? (
+                                <>
+                                    <CheckCircle2 size={14} className="text-[#6B4C51] shrink-0" />
+                                    <span className="text-black/60">Adding to existing collection</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles size={14} className="text-amber-500 shrink-0" />
+                                    <span className="text-black/60">This will create a new collection</span>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {successMessage !== "" && (
+                        <div className="mt-4 rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+                            <p className="text-green-700 text-sm">{successMessage}</p>
+                        </div>
+                    )}
+
+                    <div className="mt-auto pt-4">
+                        {loading && (
+                            <div className="w-full mb-3">
+                                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                                    <span>Uploading photos...</span>
+                                    <span>{uploadedCount} / {photos.length}</span>
+                                </div>
+                                <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-[#3D2B2E] transition-all duration-200"
+                                        style={{ width: `${photos.length > 0 ? (uploadedCount / photos.length) * 100 : 0}%` }}
+                                    />
                                 </div>
                             </div>
                         )}
                         <button
-                            className="bg-transparent text-black hover:text-white w-full p-2 rounded-md flex items-center justify-center hover:cursor-pointer border border-[#4D7C56] hover:bg-[#4D7C56] mb-2 disabled:opacity-50"
+                            className="bg-transparent text-black hover:text-white w-full p-2 rounded-lg flex items-center justify-center hover:cursor-pointer border border-[#6B4C51] hover:bg-[#6B4C51] mb-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             onClick={() => setModal("clear")}
                             disabled={loading || photos.length === 0}
                         >
                             Clear
                         </button>
                         <button
-                            className="bg-[#74A662] w-full p-2 rounded-md flex items-center justify-center hover:cursor-pointer hover:bg-[#4D7C56] disabled:bg-gray-500 disabled:cursor-not-allowed"
+                            className="bg-[#3D2B2E] w-full p-2 rounded-lg flex items-center justify-center hover:cursor-pointer hover:bg-[#6B4C51] disabled:bg-gray-300 disabled:cursor-not-allowed text-white transition-colors"
                             onClick={() => setModal("upload")}
-                            disabled={loading || photos.length === 0}
+                            disabled={loading || photos.length === 0 || path === ""}
                         >
                             {loading ? "Uploading..." : "Send to server"}
                         </button>

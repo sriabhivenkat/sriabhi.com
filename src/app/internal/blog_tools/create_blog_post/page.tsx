@@ -10,16 +10,17 @@ import Image from "next/image";
 import { Collection, useCollectionStore } from "../../../../../hooks/useCollectionsStore";
 import { PhotoWithMetadata, usePhotoStore } from "../../../../../hooks/usePhotoStore";
 import Link from "next/link";
+import DashNav from "@/components/DashNav";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
 
 type HeadingItem = { heading: string; level: number };
-type HeadingGeoTag = {
-  offset: number;
-  heading: string;
-  level: number;
+
+type GeoMarker = {
+  id: string;
   lat: number;
   lng: number;
+  label: string;
 };
 
 function PhotoInsertPanel({
@@ -160,12 +161,9 @@ export default function Page() {
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null); // draft marker, while placing a new tag
-  const savedMarkersRef = useRef<Record<number, mapboxgl.Marker>>({}); // one persistent marker per tagged heading
-  const [pendingPoint, setPendingPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const markersRef = useRef<Record<string, mapboxgl.Marker>>({});
 
-  const [headingGeoTags, setHeadingGeoTags] = useState<HeadingGeoTag[]>([]);
-  const [selectedHeadingIndex, setSelectedHeadingIndex] = useState<number | null>(null);
+  const [geoMarkers, setGeoMarkers] = useState<GeoMarker[]>([]);
 
   const contentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const lastCursorPosRef = useRef<number>(0);
@@ -177,7 +175,34 @@ export default function Page() {
     }
   };
 
-  // Create the map once, right above the textarea, only when the "trip" tag is selected
+  const addMarker = (lat: number, lng: number, map: mapboxgl.Map) => {
+    const id = crypto.randomUUID();
+
+    const marker = new mapboxgl.Marker({ draggable: true, color: "#3D2B2E" })
+      .setLngLat([lng, lat])
+      .addTo(map);
+
+    marker.on("dragend", () => {
+      const pos = marker.getLngLat();
+      setGeoMarkers((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, lat: pos.lat, lng: pos.lng } : m))
+      );
+    });
+
+    markersRef.current[id] = marker;
+    setGeoMarkers((prev) => [...prev, { id, lat, lng, label: "" }]);
+  };
+
+  const removeMarker = (id: string) => {
+    markersRef.current[id]?.remove();
+    delete markersRef.current[id];
+    setGeoMarkers((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const updateMarkerLabel = (id: string, label: string) => {
+    setGeoMarkers((prev) => prev.map((m) => (m.id === id ? { ...m, label } : m)));
+  };
+
   useEffect(() => {
     if (selectedTag === "trip" && mapContainerRef.current && !mapRef.current) {
       const map = new mapboxgl.Map({
@@ -190,20 +215,10 @@ export default function Page() {
       map.addControl(new mapboxgl.NavigationControl(), "top-right");
 
       map.on("click", (e) => {
-        const { lng, lat } = e.lngLat;
-        if (!markerRef.current) {
-          markerRef.current = new mapboxgl.Marker({ draggable: true, color: "#3D2B2E" })
-            .setLngLat(e.lngLat)
-            .addTo(map);
-          markerRef.current.on("dragend", () => {
-            const pos = markerRef.current!.getLngLat();
-            setPendingPoint({ lat: pos.lat, lng: pos.lng });
-          });
-        } else {
-          markerRef.current.setLngLat(e.lngLat);
-        }
-        setPendingPoint({ lat, lng });
+        addMarker(e.lngLat.lat, e.lngLat.lng, map);
       });
+
+      requestAnimationFrame(() => map.resize());
 
       mapRef.current = map;
     }
@@ -211,86 +226,19 @@ export default function Page() {
     if (selectedTag !== "trip" && mapRef.current) {
       mapRef.current.remove();
       mapRef.current = null;
-      markerRef.current = null;
-      savedMarkersRef.current = {};
+      Object.values(markersRef.current).forEach((m) => m.remove());
+      markersRef.current = {};
     }
 
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
-        markerRef.current = null;
-        savedMarkersRef.current = {};
+        Object.values(markersRef.current).forEach((m) => m.remove());
+        markersRef.current = {};
       }
     };
   }, [selectedTag, editorTag]);
-
-  // Keep one persistent marker per tagged heading in sync with headingGeoTags
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const currentOffsets = new Set(headingGeoTags.map((t) => t.offset));
-
-    Object.keys(savedMarkersRef.current).forEach((key) => {
-      const idx = Number(key);
-      if (!currentOffsets.has(idx)) {
-        savedMarkersRef.current[idx].remove();
-        delete savedMarkersRef.current[idx];
-      }
-    });
-
-    headingGeoTags.forEach((tag) => {
-      if (savedMarkersRef.current[tag.offset]) return;
-
-      const marker = new mapboxgl.Marker({ color: "#1B998B" })
-        .setLngLat([tag.lng, tag.lat])
-        .addTo(map);
-
-      marker.getElement().style.cursor = "pointer";
-      marker.getElement().addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        const headingIndex = headingOffsets.indexOf(tag.offset);
-        if (headingIndex >= 0) {
-          scrollToHeading(headingIndex);
-        }
-      });
-
-      savedMarkersRef.current[tag.offset] = marker;
-    });
-  }, [headingGeoTags]);
-
-  const handleSaveHeadingTag = () => {
-    if (selectedHeadingIndex === null || !pendingPoint) return;
-
-    const heading = tableOfContents[selectedHeadingIndex];
-    const offset = headingOffsets[selectedHeadingIndex];
-
-    if (!heading || offset === undefined) return;
-
-    setHeadingGeoTags((prev) => [
-      ...prev.filter((t) => t.offset !== offset),
-      {
-        offset,
-        heading: heading.heading,
-        headingId: `toc-heading-${selectedHeadingIndex}`, 
-        level: heading.level,
-        lat: pendingPoint.lat,
-        lng: pendingPoint.lng,
-      },
-    ]);
-
-    setSelectedHeadingIndex(null);
-    setPendingPoint(null);
-
-    markerRef.current?.remove();
-    markerRef.current = null;
-  };
-
-  const handleRemoveHeadingTag = (index: number) => {
-    const offset = headingOffsets[index];
-    setHeadingGeoTags((prev) => prev.filter((t) => t.offset !== offset));
-  };
 
   const handleSubmit = async () => {
     if (!title || !content) {
@@ -341,11 +289,11 @@ export default function Page() {
       if (tagNum === "2") {
         formData.append("start_end_year", `${startYear}-${endYear}`)
       }
-      if (selectedTag === "trip" && pendingPoint) {
-        formData.append("geotag", JSON.stringify(pendingPoint));
-      }
-      if (selectedTag === "trip" && headingGeoTags.length > 0) {
-        formData.append("heading_geo_tags", JSON.stringify(headingGeoTags));
+      if (selectedTag === "trip" && geoMarkers.length > 0) {
+        formData.append(
+          "geo_markers",
+          JSON.stringify(geoMarkers.map(({ lat, lng, label }) => ({ lat, lng, label })))
+        );
       }
 
       const { access_token } = await getAccessToken();
@@ -370,8 +318,7 @@ export default function Page() {
         setContent("");
         setSelectedTag("");
         setCoverPhoto(null);
-        setPendingPoint(null);
-        setHeadingGeoTags([]);
+        setGeoMarkers([]);
       } else {
         alert(data.error || "Failed to upload blog.");
       }
@@ -462,9 +409,6 @@ export default function Page() {
     if (title.level === 3) return "H3";
   }
 
-  // Looks up which TOC index a rendered heading node corresponds to, using
-  // its character offset in the source markdown — pure and side-effect-free,
-  // so it's safe under React Strict Mode's double-invoked renders.
   const getHeadingIndexFromNode = (node: any): number | undefined => {
     const offset = node?.position?.start?.offset;
     if (offset === undefined) return undefined;
@@ -473,19 +417,20 @@ export default function Page() {
   };
 
   return token ? (
-    <div className="min-h-screen flex flex-col p-5 overflow-hidden bg-[#F4F2F3]">
-      <div className="w-full flex flex-col ">
+    <div className="min-h-screen flex flex-col p-3 sm:p-5 bg-[#F4F2F3]">
+      <DashNav />
+      <div className="w-full flex flex-col mt-12 lg:mt-10">
         <Link className="flex flex-col items-start justify-center mb-4" href="/blog">
-          <h1 className="text-3xl font-serif-custom font-black text-black">
+          <h1 className="text-2xl sm:text-3xl font-serif-custom font-black text-black">
             Create Blog Post
           </h1>
         </Link>
       </div>
 
-      <div className="w-full flex gap-4 flex-1">
+      <div className="w-full flex flex-col lg:flex-row gap-4 flex-1">
         {/* Markdown editor */}
-        <div className="w-1/2 flex flex-col">
-          <div className="w-full flex gap-x-1 mb-2">
+        <div className="w-full lg:w-1/2 flex flex-col">
+          <div className="w-full flex flex-row gap-1 mb-2">
             <input
               type="text"
               placeholder="Title"
@@ -543,12 +488,12 @@ export default function Page() {
             </div>
           }
           <div
-            className="w-full flex gap-x-1 mb-2 items-center"
+            className="w-full flex flex-col sm:flex-row gap-1 mb-2 sm:items-center"
           >
             <input 
               type="file"
               accept="image/*"
-              className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-500"
+              className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-500 text-sm"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -557,12 +502,12 @@ export default function Page() {
                 }
               }}
             />
-            <div className="w-full flex flex-col ml-1">
-              <div className="flex gap-x-1">
+            <div className="w-full flex flex-col sm:ml-1 mt-2">
+              <div className="flex flex-wrap gap-1">
                 {tags.map((tag, index) => (
                   <div 
                     key={index} 
-                    className={`h-10 ${selectedTag === tag.tag ? "bg-gray-800" : "bg-[#3D2B2E]"} rounded-lg p-3 flex items-center justify-center hover:cursor-pointer`} 
+                    className={`h-10 ${selectedTag === tag.tag ? "bg-gray-800" : "bg-[#3D2B2E]"} rounded-lg px-3 flex items-center justify-center hover:cursor-pointer`} 
                     onClick={(e) => {
                       if (selectedTag === tag.tag) {
                         setSelectedTag("")
@@ -570,7 +515,7 @@ export default function Page() {
                         setSelectedTag(tag.tag)
                       }
                     }}>
-                    <p className={`text-sm ${selectedTag === tag.tag ? "text-white" : "text-white"}`}>
+                    <p className="text-xs sm:text-sm text-white whitespace-nowrap">
                       {tag.title}
                     </p>
                   </div>
@@ -582,7 +527,6 @@ export default function Page() {
           {selectedTag === "trip" && (
             <div className="w-full mb-2 flex flex-col gap-1">
               <div className="relative w-full bg-[#F4F2F3] border border-gray-300 rounded-lg flex items-center overflow-hidden">
-                {/* Sliding background indicator */}
                 <div
                   className={`absolute top-0 h-full w-1/3 bg-[#3D2B2E] transition-transform duration-300 ease-in-out ${
                     editorTag === "map"
@@ -594,7 +538,7 @@ export default function Page() {
                 />
 
                 <button
-                  className={`relative z-10 text-sm w-1/3 p-2 h-full font-bold transition-colors duration-300 ${
+                  className={`relative z-10 text-[11px] sm:text-sm w-1/3 p-2 h-full font-bold transition-colors duration-300 ${
                     editorTag === "photo"
                       ? "text-[#F4F2F3]"
                       : "text-[#3D2B2E]"
@@ -605,66 +549,68 @@ export default function Page() {
                 </button>
 
                 <button
-                  className={`relative z-10 text-sm w-1/3 p-2 h-full font-bold transition-colors duration-300 ${
+                  className={`relative z-10 text-[11px] sm:text-sm w-1/3 p-2 h-full font-bold transition-colors duration-300 ${
                     editorTag === "map"
                       ? "text-[#F4F2F3]"
                       : "text-[#3D2B2E]"
                   }`}
                   onClick={() => setEditorTag("map")}
                 >
-                  Geotag a header
+                  Add markers
                 </button>
 
                 <button
-                  className={`relative z-10 text-sm w-1/3 p-2 h-full font-bold transition-colors duration-300 ${
+                  className={`relative z-10 text-[11px] sm:text-sm w-1/3 p-2 h-full font-bold transition-colors duration-300 ${
                     editorTag === "bind"
                       ? "text-[#F4F2F3]"
                       : "text-[#3D2B2E]"
                   }`}
                   onClick={() => setEditorTag("bind")}
                 >
-                  Associate a collection
+                  Associate collection
                 </button>
               </div>
 
               {editorTag === "map" ? (
                 <div>
-                  {selectedHeadingIndex !== null ? (
-                    <div className="rounded-md bg-gray-100 p-2 text-xs text-black mb-1">
-                      Tagging:{" "}
-                      <span className="font-bold">
-                        "{tableOfContents[selectedHeadingIndex]?.heading}"
-                      </span>{" "}
-                      — click the map to place a pin.
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-600 mb-1">
-                      Select a heading in the Table of Contents on the right, then click
-                      the map to tag it.
-                    </p>
-                  )}
+                  <p className="text-xs text-gray-600 mb-1">
+                    Tap the map to drop a marker. Drag to adjust, label it below if you want.
+                  </p>
 
                   <div
                     ref={mapContainerRef}
-                    className="h-56 w-full rounded-lg border border-gray-300"
+                    className="h-48 sm:h-56 w-full rounded-lg border border-gray-300"
                   />
 
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-gray-600">
-                      {pendingPoint
-                        ? `Point: ${pendingPoint.lat.toFixed(6)}, ${pendingPoint.lng.toFixed(6)}`
-                        : "No pin placed yet"}
-                    </p>
-
-                    <button
-                      type="button"
-                      disabled={selectedHeadingIndex === null || !pendingPoint}
-                      onClick={handleSaveHeadingTag}
-                      className="cursor-pointer rounded-lg bg-[#3D2B2E] px-3 py-1.5 text-xs text-white transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2F2428]"
-                    >
-                      Save tag
-                    </button>
-                  </div>
+                  {geoMarkers.length > 0 && (
+                    <div className="mt-2 flex flex-col gap-1.5">
+                      {geoMarkers.map((marker, i) => (
+                        <div
+                          key={marker.id}
+                          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5"
+                        >
+                          <span className="text-xs text-gray-400 shrink-0">#{i + 1}</span>
+                          <input
+                            type="text"
+                            value={marker.label}
+                            onChange={(e) => updateMarkerLabel(marker.id, e.target.value)}
+                            placeholder="Label (optional)"
+                            className="flex-1 min-w-[80px] text-xs bg-transparent focus:outline-none text-black placeholder:text-gray-400"
+                          />
+                          <span className="text-[11px] text-gray-500 shrink-0">
+                            {marker.lat.toFixed(4)}, {marker.lng.toFixed(4)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeMarker(marker.id)}
+                            className="shrink-0 text-xs text-red-500 hover:underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : editorTag === "bind" ? (
                 <div>
@@ -703,12 +649,12 @@ export default function Page() {
               lastCursorPosRef.current = e.currentTarget.selectionStart;
             }}
             placeholder="Write your blog post in Markdown..."
-            className="flex-1 p-3 text-black rounded-lg border border-gray-300 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 max-h-[90vh] overflow-y-auto"
+            className="min-h-[50vh] lg:min-h-0 lg:flex-1 p-3 text-black rounded-lg border border-gray-300 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 lg:max-h-[90vh] overflow-y-auto"
           />
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="mt-2 px-4 py-2 bg-[#3D2B2E] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="mt-2 w-full lg:w-auto px-4 py-2 bg-[#3D2B2E] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create post"}
           </button>
@@ -717,154 +663,108 @@ export default function Page() {
           )}
         </div>
 
-        <div className="h-[90vh] w-1/2 flex flex-col gap-2">
+        <div className="w-full lg:w-1/2 lg:h-[90vh] flex flex-col gap-2">
           {tableOfContents.length > 0 && (
             <div className="max-h-[22.5vh] overflow-y-auto p-2 border border-gray-300 rounded-lg bg-white shrink-0">
-              <h3 className="text-2xl font-bold mb-1 text-[#3D2B2E] sticky top-0 bg-white font-serif-custom">Table of Contents</h3>
+              <h3 className="text-xl sm:text-2xl font-bold mb-1 text-[#3D2B2E] sticky top-0 bg-white font-serif-custom">Table of Contents</h3>
               <ul className="list-disc list-inside text-black">
-                {tableOfContents.map((heading, index) => {
-                  const offset = headingOffsets[index];
-                  const tag = headingGeoTags.find((t) => t.offset === offset);
-                  const isSelected = editorTag === "map" && selectedHeadingIndex === index;
-
-                  return (
-                    <div
-                      key={index}
-                      className={`flex items-stretch gap-x-2 rounded-md px-1 py-0.5 transition ${
-                        isSelected ? "bg-[#3D2B2E]/10" : ""
-                      }`}
-                    >
-                      <div
-                        className="flex gap-x-2 items-center flex-1 min-w-0 cursor-pointer rounded-md px-1 hover:bg-gray-50"
-                        onClick={() => scrollToHeading(index)}
-                      >
-                        <p className="text-xs text-gray-500">{index + 1}</p>
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-bold text-lg text-[#3D2B2E] font-serif-custom truncate">{heading.heading}</span>
-                          <span className="text-xs text-gray-500">{returnHeadingLevel(heading)}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-x-1 shrink-0">
-                        {tag ? (
-                          <>
-                            <span
-                              className="text-xs text-[#1B998B]"
-                              title={`Geotagged: ${tag.lat.toFixed(4)}, ${tag.lng.toFixed(4)}`}
-                            >
-                              📍 {tag.lat.toFixed(4)}, {tag.lng.toFixed(4)}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveHeadingTag(index)}
-                              className="text-xs text-red-500 hover:underline"
-                            >
-                              Remove
-                            </button>
-                          </>
-                        ) : editorTag === "map" ? (
-                            <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedHeadingIndex((prev) => (prev === index ? null : index))
-                            }
-                            className={`text-xs px-2 py-1 rounded-md transition ${
-                              isSelected
-                                ? "bg-[#3D2B2E] text-white"
-                                : "bg-gray-100 text-[#3D2B2E] hover:bg-gray-200"
-                            }`}
-                          >
-                            {isSelected ? "Selected" : "Tag"}
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-            {/* Markdown preview */}
-            <div className="flex-1 min-h-0 p-5 border border-gray-300 rounded-lg bg-white overflow-y-auto" ref={previewRef}>
-                {title || content ? (
-                  <div>
-                    {title && (
-                      <div className="mb-4 border-b-1 border-gray-400">
-                        {coverPhotoPreview && (
-                          <img
-                            src={coverPhotoPreview}
-                            className="w-full max-h-96 object-cover rounded-lg mb-4"
-                            alt="Cover preview"
-                          />
-                        )}
-                        <h1 className="text-4xl font-bold font-serif-custom text-black">{title}</h1>
-                        <h3 className="text-lg font-serif-custom text-gray-600 mb-1">{subtitle}</h3>
-                        <p className="font-serif-custom text-gray-600 mb-3">
-                          {selectedTag === "guide" ?
-                            `${startYear} - ${endYear}`
-                            :
-                            new Date().toLocaleDateString()
-                          } ● {readingTime} min read
-                        </p>
-                      </div>
-                    )}
-                    <div className="prose prose-lg max-w-none">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          h1: ({node, ...props}) => {
-                            const idx = getHeadingIndexFromNode(node);
-                            return <h1 id={idx !== undefined ? `toc-heading-${idx}` : undefined} className="text-3xl font-bold mb-4 text-black" {...props} />;
-                          },
-                          h2: ({node, ...props}) => {
-                            const idx = getHeadingIndexFromNode(node);
-                            return <h2 id={idx !== undefined ? `toc-heading-${idx}` : undefined} className="text-2xl font-bold mb-3 text-black" {...props} />;
-                          },
-                          h3: ({node, ...props}) => {
-                            const idx = getHeadingIndexFromNode(node);
-                            return <h3 id={idx !== undefined ? `toc-heading-${idx}` : undefined} className="text-xl font-bold mb-2 text-black" {...props} />;
-                          },
-                          ul: ({node, ...props}) => <ul className="list-disc ml-6 mb-4 text-black" {...props} />,
-                          ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-4 text-black" {...props} />,
-                          li: ({node, ...props}) => <li className="mb-1 text-black" {...props} />,
-                          p: ({node, ...props}) => <p className="mb-4 text-black" {...props} />,
-                          code: ({node, inline, ...props}: any) =>
-                            inline
-                              ? <code className="bg-gray-100 px-1 py-0.5 rounded" {...props} />
-                              : <code className="block bg-gray-100 p-4 rounded mb-4" {...props} />,
-                          table: ({node, ...props}) => <table className="table-auto border-collapse border border-gray-300 mb-4 w-full" {...props} />,
-                          thead: ({node, ...props}) => <thead className="bg-gray-100" {...props} />,
-                          tbody: ({node, ...props}) => <tbody {...props} />,
-                          tr: ({node, ...props}) => <tr className="border-b border-gray-300" {...props} />,
-                          th: ({node, ...props}) => <th className="border border-gray-300 px-4 py-2 text-left font-bold" {...props} />,
-                          td: ({node, ...props}) => <td className="border border-gray-300 px-4 py-2" {...props} />,
-                          img: ({ node, ...props }) => (
-                            <div className="flex justify-center my-6">
-                              <figure className="inline-block">
-                                <img
-                                  className="max-w-full max-h-96 rounded-lg block"
-                                  {...props}
-                                  alt={props.alt || "Image"}
-                                />
-                                {props.title && (
-                                  <figcaption className="mt-2 text-left text-sm italic text-gray-500">
-                                    {props.title}
-                                  </figcaption>
-                                )}
-                              </figure>
-                            </div>
-                          ),
-                        }}
-                      >
-                        {content}
-                      </ReactMarkdown>
+                {tableOfContents.map((heading, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-x-2 rounded-md px-1 py-0.5 cursor-pointer hover:bg-gray-50"
+                    onClick={() => scrollToHeading(index)}
+                  >
+                    <p className="text-xs text-gray-500">{index + 1}</p>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-bold text-base sm:text-lg text-[#3D2B2E] font-serif-custom truncate">{heading.heading}</span>
+                      <span className="text-xs text-gray-500">{returnHeadingLevel(heading)}</span>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-gray-400">Live preview will appear here...</p>
-                )}
+                ))}
+              </ul>
             </div>
+          )}
+          {/* Markdown preview */}
+          <div className="min-h-[50vh] lg:min-h-0 lg:flex-1 p-4 sm:p-5 border border-gray-300 rounded-lg bg-white overflow-y-auto" ref={previewRef}>
+              {title || content ? (
+                <div>
+                  {title && (
+                    <div className="mb-4 border-b-1 border-gray-400">
+                      {coverPhotoPreview && (
+                        <img
+                          src={coverPhotoPreview}
+                          className="w-full max-h-96 object-cover rounded-lg mb-4"
+                          alt="Cover preview"
+                        />
+                      )}
+                      <h1 className="text-2xl sm:text-4xl font-bold font-serif-custom text-black">{title}</h1>
+                      <h3 className="text-base sm:text-lg font-serif-custom text-gray-600 mb-1">{subtitle}</h3>
+                      <p className="font-serif-custom text-gray-600 mb-3 text-sm sm:text-base">
+                        {selectedTag === "guide" ?
+                          `${startYear} - ${endYear}`
+                          :
+                          new Date().toLocaleDateString()
+                        } ● {readingTime} min read
+                      </p>
+                    </div>
+                  )}
+                  <div className="prose prose-sm sm:prose-lg max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({node, ...props}) => {
+                          const idx = getHeadingIndexFromNode(node);
+                          return <h1 id={idx !== undefined ? `toc-heading-${idx}` : undefined} className="text-3xl font-bold mb-4 text-black" {...props} />;
+                        },
+                        h2: ({node, ...props}) => {
+                          const idx = getHeadingIndexFromNode(node);
+                          return <h2 id={idx !== undefined ? `toc-heading-${idx}` : undefined} className="text-2xl font-bold mb-3 text-black" {...props} />;
+                        },
+                        h3: ({node, ...props}) => {
+                          const idx = getHeadingIndexFromNode(node);
+                          return <h3 id={idx !== undefined ? `toc-heading-${idx}` : undefined} className="text-xl font-bold mb-2 text-black" {...props} />;
+                        },
+                        ul: ({node, ...props}) => <ul className="list-disc ml-6 mb-4 text-black" {...props} />,
+                        ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-4 text-black" {...props} />,
+                        li: ({node, ...props}) => <li className="mb-1 text-black" {...props} />,
+                        p: ({node, ...props}) => <p className="mb-4 text-black" {...props} />,
+                        code: ({node, inline, ...props}: any) =>
+                          inline
+                            ? <code className="bg-gray-100 px-1 py-0.5 rounded" {...props} />
+                            : <code className="block bg-gray-100 p-4 rounded mb-4 overflow-x-auto" {...props} />,
+                        table: ({node, ...props}) => <div className="overflow-x-auto mb-4"><table className="table-auto border-collapse border border-gray-300 w-full" {...props} /></div>,
+                        thead: ({node, ...props}) => <thead className="bg-gray-100" {...props} />,
+                        tbody: ({node, ...props}) => <tbody {...props} />,
+                        tr: ({node, ...props}) => <tr className="border-b border-gray-300" {...props} />,
+                        th: ({node, ...props}) => <th className="border border-gray-300 px-4 py-2 text-left font-bold" {...props} />,
+                        td: ({node, ...props}) => <td className="border border-gray-300 px-4 py-2" {...props} />,
+                        img: ({ node, ...props }) => (
+                          <div className="flex justify-center my-6">
+                            <figure className="inline-block">
+                              <img
+                                className="max-w-full max-h-96 rounded-lg block"
+                                {...props}
+                                alt={props.alt || "Image"}
+                              />
+                              {props.title && (
+                                <figcaption className="mt-2 text-left text-sm italic text-gray-500">
+                                  {props.title}
+                                </figcaption>
+                              )}
+                            </figure>
+                          </div>
+                        ),
+                      }}
+                    >
+                      {content}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-400">Live preview will appear here...</p>
+              )}
           </div>
+        </div>
       </div>
     </div>
   ) : (

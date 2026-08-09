@@ -6,6 +6,9 @@ import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
+import DashNav from "@/components/DashNav";
+import Link from "next/link";
+
 interface Post {
   file_url: string;
   title?: string;
@@ -18,6 +21,7 @@ interface Post {
   blog_type: number;
   start_year: number | undefined;
   end_year: number | undefined;
+  pinned: boolean;
 }
 export default function Page() {
     const [token, setToken] = useState<string | null>(null);
@@ -33,7 +37,28 @@ export default function Page() {
     const [content, setContent] = useState("");
     const [originalContent, setOriginalContent] = useState("");
     const [visible, setVisible] = useState(false);
-
+    const handlePin = async(post: Post) => {
+        const {access_token} = await getAccessToken();
+        await fetch(`https://home.sriabhi.com/api/v1/pin_post/${post.id}`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${access_token}`,
+            },
+        }).then(async (res) => {
+            if (!res.ok) {
+                throw new Error("Failed to pin post");
+            }
+            const data = await res.json();
+            setPosts((prev) =>
+                prev.map((p) =>
+                    p.id === post.id ? { ...p, pinned: data.pinned } : p
+                )
+            );
+        }).catch((err) => {
+            console.error("Failed to pin post:", err);
+            alert("Failed to pin post");
+        });
+    };
     const handleSave = async() => {
         const { access_token } = await getAccessToken();
         const form = new FormData();
@@ -128,68 +153,97 @@ export default function Page() {
         };
         loadMarkdown();
     }, [selectedPost, token]);
-    
+
     return token ? (
         <div className="min-h-screen lg:h-screen lg:overflow-hidden
                  bg-[#F4F2F3]
                  flex flex-col p-2"
         >
-            <Navbar />
-            <div className="flex flex-col items-start justify-center mt-12 mb-4">
-                <h1 className="text-3xl font-serif-custom font-black text-black">
+            <DashNav />
+            <div className="flex flex-row items-center justify-between mt-12 p-2">
+                <h1 className="text-2xl sm:text-3xl font-serif-custom font-black text-black">
                     Blog Tools
                 </h1>
+                <Link
+                    href={"/internal/blog_tools/create_blog_post"}
+                    className="border border-black px-2 py-1 rounded-lg text-black text-sm hover:cursor-pointer"
+                >
+                    Add blog post
+                </Link>
             </div>
-            <div className="w-full flex flex-col flex-1 overflow-y-auto">
+
+            <div className="w-full flex flex-col flex-1 overflow-y-auto p-2">
                 {posts.map((item, index) => (
                     <div
                         key={index}
-                        className={`${index === 0 ? "border-t" : ""} border-b border-gray-500 p-2 flex flex-col`}
+                        className={`${index === 0 ? "border-t" : ""} border-b border-gray-300 p-2 flex flex-col`}
                     >
-                    <div className="flex flex-row">
-                        <div className="flex items-center gap-2">
-                            <p className="text-gray-400 text-xs font-bold">{index + 1}</p>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <p className="text-gray-400 text-xs font-bold shrink-0">{index + 1}</p>
 
                             <Image
-                                className="h-10 w-10 rounded-md object-cover"
+                                className="h-10 w-10 rounded-md object-cover shrink-0"
                                 src={item.cover_photo || ""}
                                 height={40}
                                 width={40}
                                 alt=""
                             />
 
-                            <div className="flex flex-col">
-                                <p className="text-black text-lg font-bold font-serif-custom">
+                            <div className="flex flex-col min-w-0">
+                                <p className="text-black text-xl sm:text-lg font-bold font-serif-custom truncate">
                                     {item.title}
                                 </p>
                                 <p className="text-black text-xs">
-                                    {item.date_created?.toLocaleDateString()}
+                                    {item.date_created?.toLocaleDateString()} {item.blog_type === 2 && 
+                                        <span className="text-sm font-semibold font-serif-custom">
+                                            · Project
+                                        </span>
+                                    }
                                 </p>
                             </div>
                         </div>
 
-                        <div className="ml-auto flex gap-2 items-center">
+                        <div className="sm:ml-auto flex flex-wrap gap-2 items-center">
                             {originalContent !== content && item == selectedPost &&
                                 <button
-                                    className="text-xs px-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-green-600"
+                                    className="text-xs px-2 py-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-green-600 bg-green-50 sm:bg-transparent"
                                     onClick={handleSave}
                                 >
                                     {visible ? "Saved!" : "Save"}
                                 </button>
                             }
-                            {item.blog_type === 2 &&
-                                <div
-                                    className="w-20 h-8 bg-gray-300 rounded-md flex items-center justify-center"
-                                >
-                                    <p
-                                        className="text-green-900 text-xs font-black "
-                                    >
-                                        PROJECT
-                                    </p>
-                                </div>
-                            }
                             <button
-                                className="text-xs p-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-red-600"
+                                className={`text-xs px-2 py-1 rounded-md text-black bg-gray-100 sm:bg-transparent ${
+                                    posts.filter((p) => p.pinned).length >= 4 && !item.pinned
+                                    ? "opacity-40 cursor-not-allowed"
+                                    : "hover:bg-gray-200 hover:cursor-pointer"
+                                }`}
+                                onClick={() => handlePin(item)}
+                                disabled={posts.filter((p) => p.pinned).length >= 4 && !item.pinned}
+                            >
+                                {item.pinned ? "Unpin" : "Pin"}
+                            </button>
+                            <button
+                                className="text-xs px-2 py-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-black bg-gray-100 sm:bg-transparent"
+                                onClick={() => {
+                                if (selectedPost === item) {
+                                    setSelectedPost(undefined);
+                                } else {
+                                    setSelectedPost(item);
+                                }
+                                }}
+                            >
+                                {selectedPost === item ? "Close content" : "Open content"}
+                            </button>
+                            <button 
+                                className="text-xs px-2 py-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-black bg-gray-100 sm:bg-transparent"
+                                onClick={() => toggleStatus(item)}
+                            >
+                                {item.active ? "Take private" : "Take public"}
+                            </button>
+                            <button
+                                className="text-xs px-2 py-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-red-600 bg-red-50 sm:bg-transparent"
                                 onClick={async() => {
                                     if (confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
                                         // Optimistically update UI
@@ -215,44 +269,26 @@ export default function Page() {
                             >
                                 Delete
                             </button>
-                            <button
-                                className="text-xs p-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-black"
-                                onClick={() => {
-                                if (selectedPost === item) {
-                                    setSelectedPost(undefined);
-                                } else {
-                                    setSelectedPost(item);
-                                }
-                                }}
-                            >
-                                {selectedPost === item ? "Close content" : "Open content"}
-                            </button>
-                            <button 
-                                className="text-xs p-1 rounded-md hover:bg-gray-200 hover:cursor-pointer text-black"
-                                onClick={() => toggleStatus(item)}
-                            >
-                                {item.active ? "Take private" : "Take public"}
-                            </button>
                         </div>
                     </div>
 
                     {selectedPost === item && (
-                        <div className="w-full mt-2 flex h-[60vh]">
+                        <div className="w-full mt-2 flex flex-col sm:flex-row h-[85vh] sm:h-[60vh] gap-2 sm:gap-0">
                             <textarea
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 placeholder="Write your blog post in Markdown..."
-                                className="w-1/2 p-3 text-black rounded-lg border border-gray-300 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 overflow-y-auto"
+                                className="w-full sm:w-1/2 h-1/2 sm:h-full p-3 text-black rounded-lg border border-gray-300 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 overflow-y-auto"
                             />
 
-                            <div className="w-1/2 p-5 border border-gray-300 rounded-lg bg-white overflow-y-auto ml-2">
-                                <div className="prose prose-lg max-w-none">
+                            <div className="w-full sm:w-1/2 h-1/2 sm:h-full p-4 sm:p-5 border border-gray-300 rounded-lg bg-white overflow-y-auto sm:ml-2">
+                                <div className="prose prose-sm sm:prose-lg max-w-none">
                                     <ReactMarkdown 
                                         remarkPlugins={[remarkGfm]}
                                         components={{
-                                            h1: ({node, ...props}) => <h1 className="text-3xl font-bold mb-4 text-black" {...props} />,
-                                            h2: ({node, ...props}) => <h2 className="text-2xl font-bold mb-3 text-black" {...props} />,
-                                            h3: ({node, ...props}) => <h3 className="text-xl font-bold mb-2 text-black" {...props} />,
+                                            h1: ({node, ...props}) => <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-black" {...props} />,
+                                            h2: ({node, ...props}) => <h2 className="text-xl sm:text-2xl font-bold mb-3 text-black" {...props} />,
+                                            h3: ({node, ...props}) => <h3 className="text-lg sm:text-xl font-bold mb-2 text-black" {...props} />,
                                             ul: ({node, ...props}) => <ul className="list-disc ml-6 mb-4 text-black" {...props} />,
                                             ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-4 text-black" {...props} />,
                                             li: ({node, ...props}) => <li className="mb-1 text-black" {...props} />,
@@ -260,8 +296,8 @@ export default function Page() {
                                             code: ({node, inline, ...props}: any) => 
                                             inline 
                                                 ? <code className="bg-gray-100 px-1 py-0.5 rounded" {...props} />
-                                                : <code className="block bg-gray-100 p-4 rounded mb-4" {...props} />,
-                                            table: ({node, ...props}) => <table className="table-auto border-collapse border border-gray-300 mb-4 w-full" {...props} />,
+                                                : <code className="block bg-gray-100 p-4 rounded mb-4 overflow-x-auto" {...props} />,
+                                            table: ({node, ...props}) => <div className="overflow-x-auto mb-4"><table className="table-auto border-collapse border border-gray-300 w-full" {...props} /></div>,
                                             thead: ({node, ...props}) => <thead className="bg-gray-100" {...props} />,
                                             tbody: ({node, ...props}) => <tbody {...props} />,
                                             tr: ({node, ...props}) => <tr className="border-b border-gray-300" {...props} />,

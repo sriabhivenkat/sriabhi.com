@@ -1,19 +1,63 @@
 'use client'
 
+import type { ReactNode } from 'react';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
 import { useStravaActivities } from '../../../hooks/useStravaActivity';
 import BookCard from '@/components/BookCard';
 import MovieCard from '@/components/MovieCard';
 import { ALBUMS, BOOKS, MOVIES } from '@/constants/MEDIA';
 import AlbumCard from '@/components/AlbumCard';
 
+function RankedRow({
+  eyebrow,
+  title,
+  items,
+  renderCard,
+}: {
+  eyebrow: string;
+  title: string;
+  items: any[];
+  renderCard: (item: any) => ReactNode;
+}) {
+  const [first, ...rest] = items;
+
+  return (
+    <div className="mt-10 pt-6 border-t border-gray-300">
+      <p className="text-xs uppercase tracking-widest text-black/40 mb-1">{eyebrow}</p>
+      <h2 className="font-serif-custom text-black text-3xl lg:text-4xl mb-6">{title}</h2>
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* #1 — larger, own lane */}
+        {first && (
+          <div className="lg:w-[38%] flex-shrink-0 relative">
+            <div className="absolute -top-3 -left-3 z-20 h-10 w-10 rounded-full bg-[#3D2B2E] text-white flex items-center justify-center font-serif-custom text-lg shadow-md">
+              1
+            </div>
+            {renderCard(first)}
+          </div>
+        )}
+
+        {/* rest — tighter row, smaller badges */}
+        {rest.length > 0 && (
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {rest.map((item, idx) => (
+              <div key={idx} className="relative">
+                <div className="absolute -top-2 -left-2 z-20 h-7 w-7 rounded-full bg-[#3D2B2E] text-white flex items-center justify-center font-serif-custom text-xs shadow-md">
+                  {idx + 2}
+                </div>
+                {renderCard(item)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Page() {
-  // const [runs, setRuns] = useState([])
-  const {loading, error, runs} = useStravaActivities();
-  console.log("RUNS: ", runs)
+  const { loading, error, runs } = useStravaActivities();
 
   const getTotalMovingTime = (seconds: number) => {
     const totalMinutes = seconds / 60
@@ -23,11 +67,9 @@ export default function Page() {
     return `${Math.floor(totalMinutes)} min ${Math.round(totalSeconds)}s`
   }
 
-
-
   return (
     <>
-          <style>{`
+      <style>{`
         .bookPerspective { perspective: 500px; }
         .bookThreeD {
           transform-style: preserve-3d;
@@ -58,107 +100,80 @@ export default function Page() {
       <div className="min-h-screen flex flex-col mt-15 lg:mt-0 p-5 overflow-hidden bg-[#F4F2F3]">
         <Navbar />
 
-        <div className="w-full flex flex-col lg:flex-row items-center justify-evenly">
-          <div className='justify-self-start lg:max-w-1/3'>
-            <h1 className="font-serif-custom text-black text-3xl lg:text-5xl">
+        {/* Hero */}
+        <div className="w-full flex flex-col lg:flex-row items-center justify-between gap-10 mt-12">
+          <div className="lg:max-w-md">
+            <p className="text-xs uppercase tracking-widest text-black/40 mb-2">
+              New York City · Software Engineer
+            </p>
+            <h1 className="font-serif-custom text-black text-4xl lg:text-6xl leading-tight">
               Hi, I'm Abhi.
             </h1>
-            <p className="font-serif-custom text-black tracking-wide mt-1 text-md lg:text-lg">
-              I'm a software engineer based out of New York City. I love building cool things that solve the problems
-              my friends, family, and I face in our daily lives.
-              <br/> 
-              In my free time, I love photography, climbing, running, and hiking (so original, I know). 
-              I'm a huge football fan - I love the Texas A&M Aggies and the Seattle Seahawks.
-              Feel free to contact me at <a href="mailto:sriabhi01@gmail.com" className='underline'>sriabhi01@gmail.com</a>.
+            <p className="text-black/80 tracking-wide mt-4 text-base lg:text-lg leading-relaxed">
+              I love building cool things that solve the problems my friends, family, and I face
+              in our daily lives.
             </p>
+            <p className="text-black/80 tracking-wide mt-3 text-base lg:text-lg leading-relaxed">
+              In my free time, I love photography, climbing, running, and hiking — so original,
+              I know. Huge football fan: Texas A&amp;M Aggies and Seattle Seahawks.
+            </p>
+            <a
+              href="mailto:sriabhi01@gmail.com"
+              className="inline-block mt-5 text-sm font-medium text-[#3D2B2E] border-b border-[#3D2B2E]/40 hover:border-[#3D2B2E] transition-colors"
+            >
+              sriabhi01@gmail.com
+            </a>
           </div>
 
-          {/* ---- IMAGE FAN ---- */}
-          <div className="relative w-[350px] h-[450px] flex items-center justify-center group">
-            {/* Back-left top */}
-            <Image
-              src="https://home.sriabhi.com/api/v1/photo/iphone_photos/IMG_4642.jpeg"
-              alt="photo-1"
-              width={600}
-              height={800}
-              className="
-                absolute w-[230px] h-[300px] rounded-xl shadow-xl 
-                -rotate-12 opacity-0 group-hover:opacity-100 
-                group-hover:-translate-x-75 group-hover:translate-y-10
-                transition-all duration-700 ease-out
-              "
-            />
-
-            {/* Back-left bottom */}
+          {/* Single anchor photo with a quiet stack behind it */}
+          {/* Photo stack — fans out on hover */}
+          <div className="relative w-[300px] h-[380px] flex-shrink-0 group">
             <Image
               src="https://home.sriabhi.com/api/v1/photo/iphone_photos/IMG_2671_Original.jpeg"
-              alt="photo-2"
+              alt=""
               width={600}
               height={800}
-              className="
-                absolute w-[230px] h-[300px] rounded-xl shadow-xl 
-                -rotate-6 opacity-0 group-hover:opacity-100 
-                group-hover:-translate-x-55 group-hover:translate-y-4
-                transition-all duration-700 ease-out delay-75
-              "
+              className="absolute inset-0 w-full h-full object-cover rounded-xl shadow-md
+                -rotate-3 translate-x-3 translate-y-3 opacity-70
+                transition-all duration-500 ease-out
+                group-hover:-translate-x-16 group-hover:-rotate-6 group-hover:opacity-100"
             />
-
-            {/* Back-right top */}
             <Image
               src="https://home.sriabhi.com/api/v1/photo/iphone_photos/IMG_3046.jpeg"
-              alt="photo-3"
+              alt=""
               width={600}
               height={800}
-              className="
-                absolute w-[230px] h-[300px] rounded-xl shadow-xl 
-                rotate-12 opacity-0 group-hover:opacity-100 
-                group-hover:translate-x-65 group-hover:translate-y-10
-                transition-all duration-700 ease-out delay-150
-              "
+              className="absolute inset-0 w-full h-full object-cover rounded-xl shadow-md
+                rotate-2 -translate-x-2 translate-y-1.5 opacity-85
+                transition-all duration-500 ease-out delay-75
+                group-hover:translate-x-16 group-hover:rotate-6 group-hover:opacity-100"
             />
-
-            {/* Back-right bottom */}
-            <Image
-              src="https://home.sriabhi.com/api/v1/photo/iphone_photos/IMG_4066.jpeg"
-              alt="photo-4"
-              width={600}
-              height={800}
-              className="
-                absolute w-[230px] h-[300px] rounded-xl shadow-xl 
-                rotate-6 opacity-0 group-hover:opacity-100 
-                group-hover:translate-x-35 group-hover:translate-y-2
-                transition-all duration-700 ease-out delay-200
-              "
-            />
-
-            {/* Front image (bigger) */}
             <Image
               src="https://home.sriabhi.com/api/v1/photo/iphone_photos/IMG_5217.jpeg"
-              alt="main"
+              alt="Abhi"
               width={600}
               height={800}
-              className="
-                w-[260px] h-[340px] rounded-xl shadow-2xl relative z-30 transition duration-500
-              "
+              className="relative w-full h-full object-cover rounded-xl shadow-2xl z-10
+                transition-transform duration-500 ease-out
+                group-hover:-translate-y-2"
             />
           </div>
         </div>
-        <div className="mt-10">
-          <h2 className="font-serif-custom text-black text-3xl lg:text-4xl mb-6">My Top Movies</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {MOVIES.map((movie) => (
-              <MovieCard key={movie.title} {...movie} />
-            ))}
-          </div>
-        </div>
-        <div className="mt-10">
-          <h2 className="font-serif-custom text-black text-3xl lg:text-4xl mb-6">What I'm Listening To</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {ALBUMS.map((album) => (
-              <AlbumCard key={album.title} {...album} />
-            ))}
-          </div>
-        </div>
+
+        <RankedRow
+          eyebrow="Film"
+          title="My Top Movies"
+          items={MOVIES}
+          renderCard={(movie) => <MovieCard {...movie} />}
+        />
+
+        <RankedRow
+          eyebrow="Music"
+          title="What I'm Listening To"
+          items={ALBUMS}
+          renderCard={(album) => <AlbumCard {...album} />}
+        />
+
         <div className="mt-10">
           <h2 className="font-serif-custom text-black text-3xl lg:text-4xl mb-6">Books I've Read</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

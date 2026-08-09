@@ -26,27 +26,35 @@ export default function Navbar() {
 
         {/* Desktop links */}
         <div className="hidden sm:flex space-x-8">
-          <NavLinks setOpen={setOpen}/>
+          <NavLinks setOpen={setOpen} />
         </div>
       </div>
 
       {/* Mobile dropdown menu */}
       <div
-        className={`sm:hidden transition-all duration-300 overflow-hidden ${
-          open ? "max-h-60" : "max-h-0"
+        className={`sm:hidden grid transition-all duration-300 ease-in-out px-3 ${
+          open ? "grid-rows-[1fr] opacity-100 pb-3" : "grid-rows-[0fr] opacity-0"
         }`}
       >
-        <div className="flex flex-col items-start px-6 py-2 space-y-2 bg-[#F4F2F3]/90 backdrop-blur-md border-b border-black/5">
-          <NavLinks mobile setOpen={setOpen}/>
+        <div className="overflow-hidden">
+          <div className="flex flex-col rounded-2xl bg-white/25 backdrop-blur-xl border border-white/40 shadow-lg px-3 py-2 mt-1">
+            <NavLinks mobile setOpen={setOpen} />
+          </div>
         </div>
       </div>
     </nav>
   );
 }
 
-function NavLinks({ mobile = false, setOpen}: { mobile?: boolean, setOpen: any}) {
+function NavLinks({
+  mobile = false,
+  setOpen,
+}: {
+  mobile?: boolean;
+  setOpen: (open: boolean) => void;
+}) {
   const cls = mobile
-    ? "py-1 text-black text-base bg-[#F4F2F3]/90 backdrop-blur-md"
+    ? "block w-full py-2.5 px-2 rounded-lg text-black text-base transition-colors hover:bg-white/30 active:bg-white/40"
     : "text-black hover:text-gray-600 transition";
 
   return (
