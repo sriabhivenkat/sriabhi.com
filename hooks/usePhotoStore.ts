@@ -1,6 +1,5 @@
 // src/hooks/usePhotoStore.ts
 import { create } from "zustand";
-import { getAccessToken, getCovers, getPhotoUrls } from "../functions/abhiPcCalls";
 
 export interface Metadata {
   aperture?: string;
@@ -54,8 +53,8 @@ export const usePhotoStore = create<PhotoStore>((set, get) => ({
     set(state => ({ loading: { ...state.loading, [folder]: true } }));
 
     try {
-      const { access_token } = await getAccessToken();
-      const data = await getPhotoUrls(folder, access_token);
+      const res = await fetch(`/api/list-photos?folder=${encodeURIComponent(folder)}`);
+      const data = await res.json();
       set(state => ({
         photoData: { ...state.photoData, [folder]: data },
         loading: { ...state.loading, [folder]: false },

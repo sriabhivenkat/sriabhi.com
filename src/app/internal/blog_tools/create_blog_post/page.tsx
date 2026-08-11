@@ -2,17 +2,13 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
-import { getAccessToken, getStoredAccessToken } from "../../../../../functions/abhiPcCalls";
-import Login from "@/components/Login";
 import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import MapboxMap from "@/components/MapboxMap";
 import Image from "next/image";
 import { Collection, useCollectionStore } from "../../../../../hooks/useCollectionsStore";
 import { PhotoWithMetadata, usePhotoStore } from "../../../../../hooks/usePhotoStore";
 import Link from "next/link";
 import DashNav from "@/components/DashNav";
-
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
 
 type HeadingItem = { heading: string; level: number };
 
@@ -119,15 +115,8 @@ function PhotoInsertPanel({
 }
 
 export default function Page() {
-  const [token, setToken] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
   const [startYear, setStartYear] = useState(0);
   const [endYear, setEndYear] = useState(0);
-  useEffect(() => {
-    const t = getStoredAccessToken();
-    setToken(t);
-    setChecked(true);
-  }, []);
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [content, setContent] = useState("");
@@ -159,8 +148,6 @@ export default function Page() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
 
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Record<string, mapboxgl.Marker>>({});
 
   const [geoMarkers, setGeoMarkers] = useState<GeoMarker[]>([]);
@@ -175,9 +162,9 @@ export default function Page() {
     }
   };
 
-  const addMarker = (lat: number, lng: number, map: mapboxgl.Map) => {
-    const id = crypto.randomUUID();
-
+  // Creates a draggable marker for an existing (or brand new) geo marker id
+  // and wires it up to keep `geoMarkers` state in sync on drag.
+  const attachMarker = (id: string, lat: number, lng: number, map: mapboxgl.Map) => {
     const marker = new mapboxgl.Marker({ draggable: true, color: "#3D2B2E" })
       .setLngLat([lng, lat])
       .addTo(map);
@@ -190,6 +177,11 @@ export default function Page() {
     });
 
     markersRef.current[id] = marker;
+  };
+
+  const addMarker = (lat: number, lng: number, map: mapboxgl.Map) => {
+    const id = crypto.randomUUID();
+    attachMarker(id, lat, lng, map);
     setGeoMarkers((prev) => [...prev, { id, lat, lng, label: "" }]);
   };
 
@@ -202,43 +194,6 @@ export default function Page() {
   const updateMarkerLabel = (id: string, label: string) => {
     setGeoMarkers((prev) => prev.map((m) => (m.id === id ? { ...m, label } : m)));
   };
-
-  useEffect(() => {
-    if (selectedTag === "trip" && mapContainerRef.current && !mapRef.current) {
-      const map = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: "mapbox://styles/kastech/cmhsf9202002s01s9h22ndwoe",
-        center: [-73.9464717, 40.7132148],
-        zoom: 9,
-      });
-
-      map.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-      map.on("click", (e) => {
-        addMarker(e.lngLat.lat, e.lngLat.lng, map);
-      });
-
-      requestAnimationFrame(() => map.resize());
-
-      mapRef.current = map;
-    }
-
-    if (selectedTag !== "trip" && mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
-      Object.values(markersRef.current).forEach((m) => m.remove());
-      markersRef.current = {};
-    }
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        Object.values(markersRef.current).forEach((m) => m.remove());
-        markersRef.current = {};
-      }
-    };
-  }, [selectedTag, editorTag]);
 
   const handleSubmit = async () => {
     if (!title || !content) {
@@ -296,17 +251,11 @@ export default function Page() {
         );
       }
 
-      const { access_token } = await getAccessToken();
-
       console.log("FORM DATA CONTENTS:", Array.from(formData.entries()).map(([key, value]) => { return [key, value]; }));
 
-      const res = await fetch("https://home.sriabhi.com/api/v1/upload_files", {
+      const res = await fetch("/api/blog/create", {
         method: "POST",
         body: formData,
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
-        credentials: "include",
       });
 
       const data = await res.json();
@@ -416,7 +365,7 @@ export default function Page() {
     return idx >= 0 ? idx : undefined;
   };
 
-  return token ? (
+  return (
     <div className="min-h-screen flex flex-col p-3 sm:p-5 bg-[#F4F2F3]">
       <DashNav />
       <div className="w-full flex flex-col mt-12 lg:mt-10">
@@ -577,9 +526,16 @@ export default function Page() {
                     Tap the map to drop a marker. Drag to adjust, label it below if you want.
                   </p>
 
-                  <div
-                    ref={mapContainerRef}
+                  <MapboxMap
+                    center={[-73.9464717, 40.7132148]}
+                    zoom={9}
+                    navigationControl
                     className="h-48 sm:h-56 w-full rounded-lg border border-gray-300"
+                    onLoad={(map) => {
+                      markersRef.current = {};
+                      geoMarkers.forEach((m) => attachMarker(m.id, m.lat, m.lng, map));
+                    }}
+                    onClick={(e, map) => addMarker(e.lngLat.lat, e.lngLat.lng, map)}
                   />
 
                   {geoMarkers.length > 0 && (
@@ -767,7 +723,5 @@ export default function Page() {
         </div>
       </div>
     </div>
-  ) : (
-    <Login onLoginSuccess={(t) => setToken(t)} />
   );
 }

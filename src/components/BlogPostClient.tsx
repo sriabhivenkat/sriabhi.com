@@ -1,21 +1,19 @@
 // app/blog/[id]/BlogPostClient.tsx
 "use client";
-import { useEffect, useState, useRef} from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import Image from "next/image";
 import CopyableCodeBlock from "@/components/CodeBlock";
 import Navbar from "@/components/Navbar";
-import { getAccessToken } from "../../functions/abhiPcCalls";
 import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import MapboxMap from "./MapboxMap";
 import { AArrowDown, ArrowDown, ChevronDown} from "lucide-react";
 import { usePhotoStore } from "../../hooks/usePhotoStore";
 import { Collection, useCollectionStore } from "../../hooks/useCollectionsStore";
 import Link from "next/link";
 import TextAnnotator from "./TextAnnotator";
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
 interface GeoMarker {
   lat: number;
   lng: number;
@@ -43,102 +41,73 @@ function scrollToHeading(headingId: string) {
 }
 
 function BlogGeoMap({ geotags }: { geotags?: GeoMarker[] }) {
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-
-  useEffect(() => {
-    if (!geotags || geotags.length === 0 || !mapContainerRef.current || mapRef.current) {
-      return;
-    }
-
-    const first = geotags[0];
-
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: "mapbox://styles/kastech/cmhsf9202002s01s9h22ndwoe",
-      center: [first.lng, first.lat],
-      zoom: 10,
-    });
-
-    map.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-    const bounds = new mapboxgl.LngLatBounds();
-
-    map.on("load", () => {
-      if (geotags.length > 1) {
-        map.addSource("route", {
-          type: "geojson",
-          data: {
-            type: "Feature",
-            geometry: {
-              type: "LineString",
-              coordinates: geotags.map((tag) => [tag.lng, tag.lat]),
-            },
-            properties: {},
-          },
-        });
-
-        map.addLayer({
-          id: "route-line",
-          type: "line",
-          source: "route",
-          paint: {
-            "line-color": "#3D2B2E",
-            "line-width": 3,
-            "line-opacity": 0.8,
-          },
-        });
-      }
-
-      geotags.forEach((tag) => {
-        const marker = new mapboxgl.Marker({ color: "#3D2B2E" }).setLngLat([tag.lng, tag.lat]);
-
-        if (tag.label) {
-          marker.setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(`<strong>${tag.label}</strong>`)
-          );
-        }
-
-        marker.addTo(map);
-        bounds.extend([tag.lng, tag.lat]);
-      });
-
-      if (geotags.length > 1) {
-        map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
-      }
-    });
-
-    mapRef.current = map;
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
-  }, [geotags]);
+  if (!geotags || geotags.length === 0) return null;
+  const first = geotags[0];
 
   return (
-    <div
-      ref={mapContainerRef}
+    <MapboxMap
+      key={geotags.map((t) => `${t.lat},${t.lng}`).join("|")}
+      center={[first.lng, first.lat]}
+      zoom={10}
+      navigationControl
       className="w-full h-56 lg:h-[calc(75vh-120px)] rounded-lg overflow-hidden"
+      onLoad={(map) => {
+        const bounds = new mapboxgl.LngLatBounds();
+
+        if (geotags.length > 1) {
+          map.addSource("route", {
+            type: "geojson",
+            data: {
+              type: "Feature",
+              geometry: {
+                type: "LineString",
+                coordinates: geotags.map((tag) => [tag.lng, tag.lat]),
+              },
+              properties: {},
+            },
+          });
+
+          map.addLayer({
+            id: "route-line",
+            type: "line",
+            source: "route",
+            paint: {
+              "line-color": "#3D2B2E",
+              "line-width": 3,
+              "line-opacity": 0.8,
+            },
+          });
+        }
+
+        geotags.forEach((tag) => {
+          const marker = new mapboxgl.Marker({ color: "#3D2B2E" }).setLngLat([tag.lng, tag.lat]);
+
+          if (tag.label) {
+            marker.setPopup(
+              new mapboxgl.Popup({ offset: 25 }).setHTML(`<strong>${tag.label}</strong>`)
+            );
+          }
+
+          marker.addTo(map);
+          bounds.extend([tag.lng, tag.lat]);
+        });
+
+        if (geotags.length > 1) {
+          map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+        }
+      }}
     />
   );
 }
 export default function BlogPostClient({ id }: { id: string }) {
   const [content, setContent] = useState<string>("");
   const [post, setPost] = useState<Post>();
-  const [token, setToken] = useState<string>("");
   const [loaded, setLoaded] = useState(false);
 
-  // Fetch token + list of posts
+  // Fetch list of posts
   useEffect(() => {
     const main = async () => {
-      const { access_token } = await getAccessToken();
-      setToken(access_token);
-
-      const res = await fetch("https://home.sriabhi.com/api/v1/list_files", {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
-
+      const res = await fetch("/api/list-posts");
       const data = await res.json();
       const newPosts = data.map((p: any) => ({
         ...p,
@@ -153,14 +122,11 @@ export default function BlogPostClient({ id }: { id: string }) {
 
   // Fetch markdown file
   useEffect(() => {
-    if (!post || !token) return;
+    if (!post) return;
 
     const loadMarkdown = async () => {
       try {
-        const url = "https://home.sriabhi.com/" + post.file_url
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(`/api/blog-content?id=${encodeURIComponent(post.id)}`);
         const text = await res.text();
         setContent(text);
       } catch (err) {
@@ -170,7 +136,7 @@ export default function BlogPostClient({ id }: { id: string }) {
     };
 
     loadMarkdown();
-  }, [post, token]);
+  }, [post]);
   const { photoData, fetchFolder } = usePhotoStore();
   const { collections, fetchCollections } = useCollectionStore();
   const [bindedCol, setBindedCol] = useState<Collection>();

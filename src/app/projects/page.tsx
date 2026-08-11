@@ -4,7 +4,6 @@ import PokeballReveal from '@/components/PokeballReveal';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
 import { Post } from '../blog/page';
-import { getAccessToken } from '../../../functions/abhiPcCalls';
 import Link from 'next/link';
 
 interface Container {
@@ -149,14 +148,7 @@ export default function Page() {
     const [projects, setProjects] = useState<Post[]>([]);
       useEffect(() => {
         const main = async () => {
-          const { access_token } = await getAccessToken();
-          const res = await fetch(
-            "https://home.sriabhi.com/api/v1/list_files",
-            {
-              headers: { Authorization: `Bearer ${access_token}` },
-            }
-          );
-    
+          const res = await fetch("/api/list-posts");
           const data: Post[] = await res.json();
     
           setProjects(

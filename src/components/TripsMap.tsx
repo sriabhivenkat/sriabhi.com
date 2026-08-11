@@ -1,9 +1,7 @@
 "use client";
 import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+import MapboxMap from "./MapboxMap";
 
 export interface Geotag {
   lat: number;
@@ -25,34 +23,14 @@ export default function SimpleMap({
   onMarkerClick?: (postId: string) => void;
   center?: Geotag | [number, number];
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  // Init map once
+  // Clear markers on unmount
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: "mapbox://styles/kastech/cmhsf9202002s01s9h22ndwoe",
-      center: Array.isArray(center) ? center : [center.lng, center.lat],
-      zoom: 1.8,
-      projection: "globe",
-    });
-
-    map.on("style.load", () => map.setFog({}));
-    mapRef.current = map;
-
-    const resizeObserver = new ResizeObserver(() => map.resize());
-    resizeObserver.observe(containerRef.current);
-
     return () => {
-      resizeObserver.disconnect();
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
-      map.remove();
-      mapRef.current = null;
     };
   }, []);
 
@@ -96,5 +74,16 @@ export default function SimpleMap({
     }
   }, [markers, onMarkerClick]);
 
-  return <div ref={containerRef} className="w-full h-full rounded-lg" />;
+  return (
+    <MapboxMap
+      center={Array.isArray(center) ? center : [center.lng, center.lat]}
+      zoom={1.8}
+      projection="globe"
+      fog
+      className="w-full h-full rounded-lg"
+      onLoad={(map) => {
+        mapRef.current = map;
+      }}
+    />
+  );
 }

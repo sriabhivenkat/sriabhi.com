@@ -9,7 +9,6 @@ import PhotoRow from "@/components/PhotoRow";
 import { Search } from "lucide-react";
 
 export default function Page() {
-  const [checked, setChecked] = useState(false);
   const { photoData, fetchFolder } = usePhotoStore();
   const { collections, fetchCollections } = useCollectionStore();
   const [query, setQuery] = useState("");
@@ -17,11 +16,6 @@ export default function Page() {
   useEffect(() => {
     fetchCollections();
   }, [fetchCollections]);
-
-  useEffect(() => {
-    const t = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-    setChecked(Boolean(t));
-  }, []);
 
   useEffect(() => {
     collections.forEach((loc, i) => {
@@ -58,7 +52,6 @@ export default function Page() {
     return fuse.search(query).map((result) => result.item);
   }, [query, fuse, sortedPhotos]);
 
-  if (!checked) return null;
   return (
     <div className="flex min-h-screen flex-col bg-[#F4F2F3] p-3 sm:p-6">
       <Navbar />

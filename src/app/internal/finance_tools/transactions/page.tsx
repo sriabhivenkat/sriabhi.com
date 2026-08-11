@@ -1,10 +1,7 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import DashNav from "@/components/DashNav";
 import { SlidersHorizontal } from "lucide-react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { getAccessToken } from "../../../../../functions/abhiPcCalls";
 import Calendar from "@/components/Calendar";
 
 type Merchant = {
@@ -301,17 +298,15 @@ export default function FinanceTransactions() {
   const grouped = useMemo(() => groupByDay(activeTransactions), [activeTransactions]);
 
   async function updateTransactionCategory(transId: string, category: string) {
-    const { access_token } = await getAccessToken();
     const res = await fetch(
-      `https://home.sriabhi.com/api/v1/transactions/${transId}/category`,
+      "/api/finance/transaction-category",
       {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          Authorization: `Bearer ${access_token}`,
         },
-        body: JSON.stringify({ category }),
+        body: JSON.stringify({ transId, category }),
       }
     );
 
@@ -675,84 +670,30 @@ const PRESET_CATEGORIES = [
   { name: "🔖 Other", tag: "Other" },
 ] as const;
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
 function TransactionRowMenu({ isExpanded, transaction, onCategoryChange,}: { isExpanded: boolean, transaction: Transaction, onCategoryChange: (transId: string, category: string) => void;}) {
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const location = transaction.merchant.location;
+  const hasValidLocation =
+    location != null && location[0] != null && location[1] != null;
+  const center: [number, number] = hasValidLocation
+    ? [location[1], location[0]]
+    : [-73.9464717, 40.7132148];
 
-  const placeMarker = (lngLat: mapboxgl.LngLat, map: mapboxgl.Map) => {
-    if (!markerRef.current) {
-      markerRef.current = new mapboxgl.Marker({ draggable: true, color: "#1B998B" })
-        .setLngLat(lngLat)
-        .addTo(map);
-
-      markerRef.current.on("dragend", () => {
-        const { lng, lat } = markerRef.current!.getLngLat();
-      });
-    } else {
-      markerRef.current.setLngLat(lngLat);
-    }
-  };
-
-  useEffect(() => {
-    if (isExpanded && mapContainerRef.current && !mapRef.current) {
-      const location = transaction.merchant.location;
-      const hasValidLocation =
-        location != null && location[0] != null && location[1] != null;
-
-      const map = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: "mapbox://styles/kastech/cmhsf9202002s01s9h22ndwoe",
-        center: hasValidLocation
-          ? [location[1], location[0]]
-          : [-73.9464717, 40.7132148],
-        zoom: 12,
-      });
-
-      map.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-      const resizeObserver = new ResizeObserver(() => {
-        map.resize();
-      });
-      resizeObserver.observe(mapContainerRef.current);
-      resizeObserverRef.current = resizeObserver;
-
-      map.on("load", () => {
-        map.resize();
-        if (hasValidLocation) {
-          const [lat, lng] = location;
-          placeMarker(new mapboxgl.LngLat(lng, lat), map);
-        }
-      });
-
-      mapRef.current = map;
-    }
-
-    if (!isExpanded && mapRef.current) {
-      resizeObserverRef.current?.disconnect();
-      resizeObserverRef.current = null;
-      mapRef.current.remove();
-      mapRef.current = null;
-    }
-
-    return () => {
-      resizeObserverRef.current?.disconnect();
-      resizeObserverRef.current = null;
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, [isExpanded]);
   const currentCategory =
     transaction.category[transaction.category.length - 1] ?? "Other";
   return (
     <div className="mx-4 mb-3 rounded-xl bg-neutral-50 border border-neutral-100 p-3 flex flex-col">
-      {/* <div
-        ref={mapContainerRef}
+      {/* <MapboxMap
+        center={center}
+        zoom={12}
+        navigationControl
         className="w-full h-56 rounded-lg overflow-hidden border border-neutral-200"
+        onLoad={(map) => {
+          if (hasValidLocation) {
+            new mapboxgl.Marker({ draggable: true, color: "#1B998B" })
+              .setLngLat(center)
+              .addTo(map);
+          }
+        }}
       /> */}
       <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-400">
         Tag {transaction.merchant.officialName} as

@@ -1,7 +1,6 @@
 "use client";
 import React, {useEffect, useState} from "react";
 import DashNav from "@/components/DashNav";
-import { getAccessToken } from "../../../../../functions/abhiPcCalls";
 
 type CommenterStatus = "unverified" | "pending" | "approved" | "blocked";
 
@@ -22,21 +21,10 @@ export default function Commenters() {
     const [commenters, setCommenters] = useState<Commenter[]>([]);
 
     async function decideCommenter(commenterId: string, decision: "approve" | "block" | "unblock") {
-        const { access_token } = await getAccessToken();
-
-        const url =
-            decision === "approve"
-            ? `https://home.sriabhi.com/api/v1/approve_commenter/${commenterId}`
-            : `https://home.sriabhi.com/api/v1/block_commenter/${commenterId}`;
-
-        const res = await fetch(url, {
+        const res = await fetch("/api/commenters/decide", {
             method: "POST",
-            headers: {
-            Authorization: `Bearer ${access_token}`,
-            ...(decision !== "approve" ? { "Content-Type": "application/json" } : {}),
-            },
-            ...(decision === "block" ? { body: JSON.stringify({ action: "BLOCK" }) } : {}),
-            ...(decision === "unblock" ? { body: JSON.stringify({ action: "UNBLOCK" }) } : {}),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: commenterId, decision }),
         });
 
         if (!res.ok) {
@@ -57,13 +45,7 @@ export default function Commenters() {
 
     useEffect(() => {
         const main = async() => {
-            const { access_token } = await getAccessToken();
-            await fetch(`https://home.sriabhi.com/api/v1/get_commenters`, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${access_token}`,
-                },
-            })
+            await fetch("/api/commenters")
             .then((res) => res.json())
             .then((data) => {
                 console.log(data)

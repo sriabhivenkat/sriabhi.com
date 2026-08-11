@@ -5,12 +5,11 @@ import { getAccessToken } from '../../../../../functions/abhiPcCalls';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const headers = req.headers;
-    const authHeader = headers.get('Authorization');
+    const { access_token } = await getAccessToken();
 
     const upstreamRes = await fetch('https://home.sriabhi.com/api/v1/photo/add_photo_metadata', {
       method: "POST",
-      headers: { Authorization: authHeader || '', "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${access_token}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 

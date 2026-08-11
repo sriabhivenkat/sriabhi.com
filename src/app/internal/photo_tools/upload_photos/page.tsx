@@ -1,7 +1,6 @@
 "use client";
 import Navbar from "@/components/Navbar";
 import React, { useEffect, useState, useRef } from "react";
-import { getAccessToken } from "../../../../../functions/abhiPcCalls";
 import { useCollectionStore } from "../../../../../hooks/useCollectionsStore";
 import { UploadCloud, X, Sparkles, CheckCircle2 } from "lucide-react";
 import DashNav from "@/components/DashNav";
@@ -45,7 +44,6 @@ export default function Page() {
         setUploadedCount(0);
         setSuccessMessage("");
 
-        const { access_token } = await getAccessToken();
         const modPath = path !== "iphone_photos" ? `trips/${path}` : path;
 
         try {
@@ -55,14 +53,10 @@ export default function Page() {
                 formData.append("path", modPath);
 
                 const res = await fetch(
-                    "https://home.sriabhi.com/api/v1/photo/upload_photos",
+                    "/api/photo/upload",
                     {
                         method: "POST",
                         body: formData,
-                        headers: {
-                            Authorization: `Bearer ${access_token}`,
-                        },
-                        credentials: "include",
                     }
                 );
 

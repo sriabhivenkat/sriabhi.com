@@ -2,20 +2,19 @@ import React, { useEffect, useState, useRef } from "react";
 import { PhotoWithMetadata } from "../../hooks/usePhotoStore";
 import mapboxgl from "mapbox-gl";
 import Image from "next/image";
+import MapboxMap from "./MapboxMap";
 type PhotoRowProps = {
   photo: PhotoWithMetadata & { collectionName: string };
   index: number;
 };
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
+const DEFAULT_CENTER: [number, number] = [-73.9464717, 40.7132148];
+
 export default function PhotoRow({ photo, index }: PhotoRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [geotagPoint, setGeotagPoint] = useState<{ lat: number; lng: number } | null>(null);
-  const [orientation, setOrientation] = useState<"landscape" | "portrait" | "square" | null>(null);
 
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
 
   const rowKey = `${photo.collectionName}-${photo.url}-${index}`;
@@ -45,48 +44,10 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
     setGeotagPoint({ lat: lngLat.lat, lng: lngLat.lng });
   };
 
-  // Initialize / tear down the map whenever the panel opens/closes
+  // The marker ref only lives as long as the map does, so reset it whenever
+  // the panel (and thus the map) closes and unmounts.
   useEffect(() => {
-    if (isExpanded && mapContainerRef.current && !mapRef.current) {
-      const hasExistingGeotag = geotagPoint !== null;
-      const map = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: "mapbox://styles/kastech/cmhsf9202002s01s9h22ndwoe",
-        center: hasExistingGeotag ? [geotagPoint!.lng, geotagPoint!.lat] : [-73.9464717, 40.7132148],
-        zoom: 12,
-      });
-
-      map.addControl(new mapboxgl.NavigationControl(), "top-right");
-      if (hasExistingGeotag) {
-        map.on("load", () => {
-          placeMarker(new mapboxgl.LngLat(geotagPoint!.lng, geotagPoint!.lat), map);
-        });
-      }
-      // Click anywhere on the map to drop or move the marker there
-      map.on("click", (e) => {
-        placeMarker(e.lngLat, map);
-      });
-
-      // Handles the map mounting inside a still-animating expand panel,
-      // where the container's initial measured size can be off.
-      requestAnimationFrame(() => map.resize());
-
-      mapRef.current = map;
-    }
-
-    if (!isExpanded && mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
-      markerRef.current = null;
-    }
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        markerRef.current = null;
-      }
-    };
+    if (!isExpanded) markerRef.current = null;
   }, [isExpanded]);
 
   const handleClearMarker = () => {
@@ -102,8 +63,6 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
       alert("Please provide a description or select a geotag point before saving.");
       return;
     }
-    const token = await fetch("/api/access-token").then(res => res.json()).then(data => data.access_token);
-    console.log("Access token for saving metadata:", token);
     console.log("Saving photo metadata:", {
         photo_id: photo.pid,
         description: descriptionDraft.trim() || null,
@@ -114,7 +73,6 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         photo_id: photo.pid,
@@ -187,31 +145,13 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
       {isExpanded ? (
         <div className="mt-3 rounded-xl border border-[#E8E2E4] bg-[#F8F6F7] flex flex-col p-3 sm:p-4">
           <div className="flex flex-col lg:flex-row gap-3">
-            <div
-              className={`relative overflow-hidden rounded-lg bg-[#F4F2F3] w-full aspect-video sm:aspect-[4/3] lg:aspect-auto lg:w-auto ${
-                orientation === "portrait"
-                  ? "lg:flex-[0.7] lg:aspect-[3/4]"
-                  : orientation === "landscape"
-                  ? "lg:flex-[1.4] lg:aspect-[4/3]"
-                  : "lg:flex-[1] lg:aspect-square"
-              }`}
-            >
+            <div className="relative overflow-hidden rounded-lg bg-[#F4F2F3] w-full aspect-video sm:aspect-[4/3] lg:aspect-square lg:w-auto lg:flex-1">
               <Image
                 src={photo.url}
                 alt={`${photo.collectionName} photo ${index + 1}`}
                 fill
-                className="object-cover"
+                className="object-contain rounded-lg"
                 sizes="(max-width: 1024px) 100vw, 300px"
-                onLoad={(e) => {
-                  const img = e.currentTarget;
-                  if (img.naturalWidth > img.naturalHeight) {
-                    setOrientation("landscape");
-                  } else if (img.naturalWidth < img.naturalHeight) {
-                    setOrientation("portrait");
-                  } else {
-                    setOrientation("square");
-                  }
-                }}
               />
             </div>
 
@@ -232,10 +172,18 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
             <div className="lg:hidden border-t border-[#E8E2E4]" />
 
             <div className="flex flex-col flex-1 lg:flex-[2] gap-2 text-black">
-              <div
+              <MapboxMap
                 key={rowKey}
-                ref={mapContainerRef}
+                center={geotagPoint ? [geotagPoint.lng, geotagPoint.lat] : DEFAULT_CENTER}
+                zoom={12}
+                navigationControl
                 className="h-56 lg:h-full w-full rounded-lg"
+                onLoad={(map) => {
+                  if (geotagPoint) {
+                    placeMarker(new mapboxgl.LngLat(geotagPoint.lng, geotagPoint.lat), map);
+                  }
+                }}
+                onClick={(e, map) => placeMarker(e.lngLat, map)}
               />
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs text-[#7A6B70] truncate">

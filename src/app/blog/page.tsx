@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
-import { getAccessToken } from "../../../functions/abhiPcCalls";
 import CommentAccessModal from "@/components/CommentAccessModal";
 import TripsMap, { Geotag } from "@/components/TripsMap";
 import { Pin } from "lucide-react";
@@ -138,10 +137,7 @@ export default function Page() {
 
   useEffect(() => {
     const main = async () => {
-      const { access_token } = await getAccessToken();
-      const res = await fetch("https://home.sriabhi.com/api/v1/list_files", {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
+      const res = await fetch("/api/list-posts");
       const data: Post[] = await res.json();
       setPosts(
         data

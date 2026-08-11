@@ -6,15 +6,47 @@ import { PhotoUrlsResponse, PhotoWithMetadata } from "../hooks/usePhotoStore";
 
 const baseUrl = "https://home.sriabhi.com"
 
-export async function getAccessToken() {
-  const isServer = typeof window === 'undefined';
-  const url = isServer
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/access-token`
-    : '/api/access-token';
+let cachedAccessToken: string | null = null;
+let cachedAccessTokenExpiry: number | null = null;
 
-  const res = await fetch(url);
+/**
+ * Server-only. Fetches (and caches) an access token from the token service
+ * in-process, so the credentials never cross the network as a standalone
+ * HTTP call this app's own server could receive from the outside.
+ */
+export async function getAccessToken(): Promise<{ access_token: string }> {
+  if (typeof window !== 'undefined') {
+    throw new Error('Access token must not be fetched from the browser. Use a protected server-side route instead.');
+  }
+
+  const now = Date.now();
+
+  if (cachedAccessToken && cachedAccessTokenExpiry && now < cachedAccessTokenExpiry - 60_000) {
+    return { access_token: cachedAccessToken };
+  }
+
+  const res = await fetch(`${process.env.API_BASE_URL}/api/v1/request_access_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: process.env.AUTH_TOKEN_USER,
+      password: process.env.AUTH_TOKEN_PASS,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to fetch access token: ${res.status} ${text}`);
+  }
+
   const data = await res.json();
-  return { access_token: data.access_token };
+  cachedAccessToken = data.access_token;
+
+  // Decode expiry from JWT payload
+  const payload = JSON.parse(Buffer.from(data.access_token.split('.')[1], 'base64').toString());
+  cachedAccessTokenExpiry = payload.exp * 1000; // convert to ms
+
+  return { access_token: cachedAccessToken! };
 }
 
 export async function connectNewInstitution(item_id: string, plaid_access_token: string, institution_id: string, institution_name: string) {

@@ -1,43 +1,26 @@
 "use client";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Navbar from "./Navbar";
 import { PhotoWithMetadata, usePhotoStore } from "../../hooks/usePhotoStore";
 import PhotoCard from "./PhotoCard";
 import Image from "next/image";
 import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
 import { useCollectionStore } from "../../hooks/useCollectionsStore";
-
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
+import MapboxMap from "./MapboxMap";
 
 function GeotagMap({ lat, lng }: { lat: number; lng: number }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: "mapbox://styles/kastech/cmhsf9202002s01s9h22ndwoe",
-      center: [lng, lat],
-      zoom: 11,
-      interactive: false,
-    });
-
-    new mapboxgl.Marker({ color: "#1B998B" })
-      .setLngLat([lng, lat])
-      .addTo(map);
-
-    mapRef.current = map;
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
-  }, [lat, lng]);
-
-  return <div ref={containerRef} className="h-48 w-full rounded-lg" />;
+  return (
+    <MapboxMap
+      key={`${lat}-${lng}`}
+      center={[lng, lat]}
+      zoom={11}
+      interactive={false}
+      className="h-48 w-full rounded-lg"
+      onLoad={(map) => {
+        new mapboxgl.Marker({ color: "#1B998B" }).setLngLat([lng, lat]).addTo(map);
+      }}
+    />
+  );
 }
 
 export default function Collection({ path }: { path: string }) {

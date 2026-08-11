@@ -1,11 +1,10 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import MapboxMap from "@/components/MapboxMap";
 import DashNav from "@/components/DashNav";
 import { Route, Trash2, Save, Heart, Activity, Moon, Footprints, Brush, Undo2, MapPin, Waypoints, Timer, Share } from "lucide-react";
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 const HOME_COORDS: [number, number] = [-73.9438914, 40.7132148];
 type LngLat = [number, number];
 
@@ -73,15 +72,12 @@ function ToolbarButton({
 }
 
 export default function HealthTools() {
-    const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const markersRef = useRef<mapboxgl.Marker[]>([]);
     const [mapLoaded, setMapLoaded] = useState(false);
     const [mapError, setMapError] = useState<string | null>(null);
     const [isDrawing, setIsDrawing] = useState<boolean>(false);
     const [waypoints, setWaypoints] = useState<LngLat[]>([HOME_COORDS]);
-    const waypointsRef = useRef<LngLat[]>([HOME_COORDS]);
-    const isDrawingRef = useRef(false);
     const [directionsLoading, setDirectionsLoading] = useState(false);
     const [directionsError, setDirectionsError] = useState<string | null>(null);
     const [routeStats, setRouteStats] = useState<{ distance: number; duration: number } | null>(null);
@@ -91,19 +87,10 @@ export default function HealthTools() {
     const [activitiesLoading, setActivitiesLoading] = useState(false);
     const [activitiesError, setActivitiesError] = useState<string | null>(null);
 
-    useEffect(() => {
-        isDrawingRef.current = isDrawing;
-    }, [isDrawing]);
-
-    useEffect(() => {
-        waypointsRef.current = waypoints;
-    }, [waypoints]);
-
-    const addMarker = useCallback((lngLat: LngLat, index: number) => {
-        if (waypointsRef.current.length >= 25) return;
+    const addMarker = (lngLat: LngLat, index: number, map: mapboxgl.Map) => {
         const marker = new mapboxgl.Marker({ draggable: true, color: "#3D2B2E" })
             .setLngLat(lngLat)
-            .addTo(mapRef.current!);
+            .addTo(map);
 
         marker.on("dragend", () => {
             const { lng, lat } = marker.getLngLat();
@@ -115,96 +102,46 @@ export default function HealthTools() {
         });
 
         markersRef.current.push(marker);
-    }, []);
+    };
 
-    useEffect(() => {
-        const map = mapRef.current;
-        if (!map || !mapLoaded) return;
+    const handleMapLoad = (map: mapboxgl.Map) => {
+        mapRef.current = map;
 
-        const handleClick = (e: mapboxgl.MapMouseEvent) => {
-            if (!isDrawingRef.current) return;
-            if (waypointsRef.current.length >= 25) return;
-            const lngLat: LngLat = [e.lngLat.lng, e.lngLat.lat];
-            const nextIndex = waypointsRef.current.length;
+        const homePopup = new mapboxgl.Popup({ offset: 25, closeOnClick: false }).setHTML(
+            `<div style="font-family: inherit; color: #3D2B2E;">
+                <strong>Home</strong><br/>310 Graham Ave
+            </div>`
+        );
 
-            addMarker(lngLat, nextIndex);
-            setWaypoints((prev) => [...prev, lngLat]);
-        };
+        const homeMarker = new mapboxgl.Marker({ color: "#B45309" })
+            .setLngLat(HOME_COORDS)
+            .setPopup(homePopup)
+            .addTo(map);
+        markersRef.current[0] = homeMarker;
 
-        map.on("click", handleClick);
-        return () => {
-            map.off("click", handleClick);
-        };
-    }, [mapLoaded, addMarker]);
-
-    useEffect(() => {
-        if (!mapContainerRef.current || mapRef.current) return;
-
-        if (!mapboxgl.accessToken || mapboxgl.accessToken === "undefined") {
-            setMapError("Missing NEXT_PUBLIC_MAPBOX_TOKEN — check your env config on this route.");
-            return;
-        }
-
-        const frame = requestAnimationFrame(() => {
-            if (!mapContainerRef.current) return;
-
-            const map = new mapboxgl.Map({
-                container: mapContainerRef.current,
-                style: "mapbox://styles/kastech/cmhsf9202002s01s9h22ndwoe",
-                center: HOME_COORDS,
-                zoom: 13.5,
-            });
-
-            map.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-            const homePopup = new mapboxgl.Popup({ offset: 25, closeOnClick: false }).setHTML(
-                `<div style="font-family: inherit; color: #3D2B2E;">
-                    <strong>Home</strong><br/>310 Graham Ave
-                </div>`
-            );
-
-            map.on("load", () => {
-                const homeMarker = new mapboxgl.Marker({ color: "#B45309" })
-                    .setLngLat(HOME_COORDS)
-                    .setPopup(homePopup)
-                    .addTo(map);
-                markersRef.current[0] = homeMarker;
-
-                map.addSource("route", {
-                    type: "geojson",
-                    data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [] } },
-                });
-                map.addLayer({
-                    id: "route-line",
-                    type: "line",
-                    source: "route",
-                    layout: { "line-join": "round", "line-cap": "round" },
-                    paint: { "line-color": "#2A9D8F", "line-width": 4, "line-opacity": 1 },
-                });
-                setMapLoaded(true);
-            });
-
-            map.on("error", (e) => {
-                console.error("Mapbox error:", e.error);
-                setMapError(e.error?.message ?? "Unknown map error — check console.");
-            });
-
-            const resizeObserver = new ResizeObserver(() => map.resize());
-            resizeObserver.observe(mapContainerRef.current);
-
-            mapRef.current = map;
-            (map as any)._resizeObserver = resizeObserver;
+        map.addSource("route", {
+            type: "geojson",
+            data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [] } },
         });
+        map.addLayer({
+            id: "route-line",
+            type: "line",
+            source: "route",
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: { "line-color": "#2A9D8F", "line-width": 4, "line-opacity": 1 },
+        });
+        setMapLoaded(true);
+    };
 
-        return () => {
-            cancelAnimationFrame(frame);
-            if (mapRef.current) {
-                (mapRef.current as any)._resizeObserver?.disconnect();
-                mapRef.current.remove();
-                mapRef.current = null;
-            }
-        };
-    }, []);
+    const handleMapClick = (e: mapboxgl.MapMouseEvent, map: mapboxgl.Map) => {
+        if (!isDrawing) return;
+        if (waypoints.length >= 25) return;
+        const lngLat: LngLat = [e.lngLat.lng, e.lngLat.lat];
+        const nextIndex = waypoints.length;
+
+        addMarker(lngLat, nextIndex, map);
+        setWaypoints((prev) => [...prev, lngLat]);
+    };
 
     const handleClear = () => {
         markersRef.current.slice(1).forEach((m) => m.remove());
@@ -374,7 +311,15 @@ export default function HealthTools() {
                         </div>
 
                         <div className="relative flex-1 min-h-0">
-                            <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
+                            <MapboxMap
+                                center={HOME_COORDS}
+                                zoom={13.5}
+                                navigationControl
+                                className="absolute inset-0 w-full h-full"
+                                onLoad={handleMapLoad}
+                                onClick={handleMapClick}
+                                onError={setMapError}
+                            />
 
                             {!mapLoaded && !mapError && (
                                 <div className="absolute inset-0 flex items-center justify-center

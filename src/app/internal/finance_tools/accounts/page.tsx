@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import DashNav from "@/components/DashNav";
-import { getAccessToken } from "../../../../../functions/abhiPcCalls";
 import { Account } from "@/components/FinanceAccountsPage";
 import { ChevronDown } from "lucide-react";
 import Image from "next/image";
@@ -176,15 +175,7 @@ export default function FinanceAccounts() {
 
   useEffect(() => {
     const main = async () => {
-      const { access_token } = await getAccessToken();
-      await fetch("https://home.sriabhi.com/api/v1/get_accounts", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${access_token}`,
-        },
-      })
+      await fetch("/api/finance/accounts")
         .then((res) => res.json())
         .then((data) => {
           setAccounts(data || []);

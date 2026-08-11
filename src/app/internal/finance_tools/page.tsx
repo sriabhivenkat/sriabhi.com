@@ -1,7 +1,5 @@
     "use client";
     import React, { useEffect, useState, useRef, useMemo } from "react";
-    import { getAccessToken, getStoredAccessToken } from "../../../../functions/abhiPcCalls";
-    import Login from "@/components/Login";
     import { LineChart, lineElementClasses } from '@mui/x-charts/LineChart';
     import { ChartsReferenceLine } from "@mui/x-charts";
     import { ChartCandlestick, ClipboardClock, Cog, LucideArrowDownRightFromCircle, LucideArrowUpRightFromCircle, NotebookTabs, PiggyBank, Receipt } from "lucide-react";
@@ -10,13 +8,6 @@
 import DashNav from "@/components/DashNav";
 
     export default function Page() {
-    const [token, setToken] = useState<string | null>(null);
-    const [checked, setChecked] = useState(false);
-    useEffect(() => {
-        const t = getStoredAccessToken();
-        setToken(t);
-        setChecked(true);
-    }, []);
 
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [netWorth, setNetWorth] = useState<number>(0);
@@ -29,16 +20,7 @@ import DashNav from "@/components/DashNav";
 
     useEffect(() => {
         const main = async () => {
-        const { access_token } = await getAccessToken();
-        console.log("Access Token:", access_token);
-        await fetch('https://home.sriabhi.com/api/v1/get_accounts', {
-            method: 'GET',
-            headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            Authorization: `Bearer ${access_token}`,
-            }
-        })
+        await fetch('/api/finance/accounts')
             .then((res) => res.json())
             .then((data) => {
             console.log("Accounts Data:", data);
@@ -64,14 +46,7 @@ import DashNav from "@/components/DashNav";
             setCreditCardDebt(liabilities);
             })
 
-        await fetch("https://home.sriabhi.com/api/v1/get_temporal_net_worth", {
-            method: "GET",
-            headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            Authorization: `Bearer ${access_token}`,
-            }
-        })
+        await fetch("/api/finance/temporal-net-worth")
             .then((res) => res.json())
             .then((data) => {
             console.log("TEMP NW: ", data)
@@ -319,7 +294,7 @@ import DashNav from "@/components/DashNav";
         main();
     }, []);
 
-    return token ? (
+    return (
         <div className="bg-[#F4F2F3] h-screen w-screen sm:overflow-hidden flex p-2">
             <DashNav />
             {page === "dashboard" && (
@@ -555,7 +530,5 @@ import DashNav from "@/components/DashNav";
             </div>
             )}
         </div>
-    ) : (
-        <Login onLoginSuccess={(t) => setToken(t)} />
     )
     }

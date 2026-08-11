@@ -22,7 +22,7 @@ export default function Page() {
   const real_photos = collections.filter((c) => c.grabPath != "iphone_photos")
   const cards = real_photos.map(loc => ({
     ...loc,
-    coverUrl: "https://home.sriabhi.com" + loc.cover_url,
+    coverUrl: loc.cover_url ? "https://home.sriabhi.com" + loc.cover_url : null,
     photoCount: photoData[loc.grabPath]?.total,
     lastUpdated: photoData[loc.grabPath]?.lastUpdated,
   })).sort((a, b) => {
@@ -36,7 +36,7 @@ export default function Page() {
     setVisibleCount(total);
   }, [cards]);
 
-  const allLoaded = cards.length > 0 && cards.every(c => !!photoData[c.grabPath] && !!c.coverUrl);
+  const allLoaded = cards.length > 0 && cards.every(c => !!photoData[c.grabPath]);
   const PLACEHOLDER_COUNT = 12;
 
   return (
@@ -65,15 +65,19 @@ export default function Page() {
                     className="min-h-60 rounded-md relative hover:cursor-pointer overflow-hidden"
                     href={`photos/${item.grabPath.split("/")[1]}`}
                   >
-                    <Image
-                      src={item.coverUrl!}
-                      fill
-                      quality={60}
-                      loading={index < 3 ? 'eager' : 'lazy'}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      className="object-cover rounded-md"
-                      alt={item.name}
-                    />
+                    {item.coverUrl ? (
+                      <Image
+                        src={item.coverUrl}
+                        fill
+                        quality={60}
+                        loading={index < 3 ? 'eager' : 'lazy'}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover rounded-md"
+                        alt={item.name}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400 rounded-md" />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70 rounded-md" />
                     <p className="absolute text-2xl bottom-2 left-3 font-serif-custom text-white font-semibold">{item.name}</p>
                     <div className="absolute bottom-2 right-3 text-right">

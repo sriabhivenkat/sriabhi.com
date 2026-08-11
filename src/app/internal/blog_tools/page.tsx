@@ -1,7 +1,5 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { getAccessToken, getStoredAccessToken } from "../../../../functions/abhiPcCalls";
-import Login from "@/components/Login";
 import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import ReactMarkdown from "react-markdown";
@@ -24,26 +22,16 @@ interface Post {
   pinned: boolean;
 }
 export default function Page() {
-    const [token, setToken] = useState<string | null>(null);
-    const [checked, setChecked] = useState(false);
-    useEffect(() => {
-        const t = getStoredAccessToken();
-        setToken(t);
-        setChecked(true);
-    }, []);
-
     const [posts, setPosts] = useState<Post[]>([]);
     const [selectedPost, setSelectedPost] = useState<Post | undefined>();
     const [content, setContent] = useState("");
     const [originalContent, setOriginalContent] = useState("");
     const [visible, setVisible] = useState(false);
     const handlePin = async(post: Post) => {
-        const {access_token} = await getAccessToken();
-        await fetch(`https://home.sriabhi.com/api/v1/pin_post/${post.id}`, {
+        await fetch("/api/blog/pin", {
             method: "POST",
-            headers: {
-                Authorization: `Bearer ${access_token}`,
-            },
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: post.id }),
         }).then(async (res) => {
             if (!res.ok) {
                 throw new Error("Failed to pin post");
@@ -60,18 +48,11 @@ export default function Page() {
         });
     };
     const handleSave = async() => {
-        const { access_token } = await getAccessToken();
-        const form = new FormData();
-        const blob = new Blob([content], {"type": "text/markdown"})
-        
-        form.append("file", blob, "post.md")
         if (selectedPost) {
-            await fetch(`https://home.sriabhi.com/api/v1/update_blog_file/${selectedPost.id}`, {
+            await fetch("/api/blog/save", {
                 method: "POST",
-                headers: {
-                    Authorization: `Bearer ${access_token}`,
-                },
-                body: form,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: selectedPost.id, content }),
             });
             setVisible(true)
             setOriginalContent(content)
@@ -80,18 +61,12 @@ export default function Page() {
     }
 
     const toggleStatus = async (post: Post) => {
-        const { access_token } = await getAccessToken();
-
         try {
-            const res = await fetch(
-                `https://home.sriabhi.com/api/v1/update_blog_status/${post.id}`,
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${access_token}`,
-                    },
-                }
-            );
+            const res = await fetch("/api/blog/toggle-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: post.id }),
+            });
             const data = await res.json();
 
             // Update posts array in state
@@ -114,14 +89,7 @@ export default function Page() {
       
     useEffect(() => {
         const main = async () => {
-            const { access_token } = await getAccessToken();
-            const res = await fetch(
-                "https://home.sriabhi.com/api/v1/list_files",
-                {
-                headers: { Authorization: `Bearer ${access_token}` },
-                }
-            );
-        
+            const res = await fetch("/api/list-posts");
             const data: Post[] = await res.json();
         
             setPosts(
@@ -136,13 +104,10 @@ export default function Page() {
     }, []);
 
     useEffect(() => {
-        if (!selectedPost || !token) return;
+        if (!selectedPost) return;
         const loadMarkdown = async () => {
             try {
-                const url = "https://home.sriabhi.com/" + selectedPost.file_url
-                const res = await fetch(url, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await fetch(`/api/blog-content?id=${encodeURIComponent(selectedPost.id)}`);
                 const text = await res.text();
                 setOriginalContent(text);
                 setContent(text);
@@ -152,9 +117,9 @@ export default function Page() {
             }
         };
         loadMarkdown();
-    }, [selectedPost, token]);
+    }, [selectedPost]);
 
-    return token ? (
+    return (
         <div className="min-h-screen lg:h-screen lg:overflow-hidden
                  bg-[#F4F2F3]
                  flex flex-col p-2"
@@ -252,12 +217,10 @@ export default function Page() {
                                             setSelectedPost(undefined);
                                         }
 
-                                        const { access_token } = await getAccessToken();
-                                        await fetch(`https://home.sriabhi.com/api/v1/delete/${item.id}`, {
-                                            method: "DELETE",
-                                            headers: {
-                                                Authorization: `Bearer ${access_token}`,
-                                            },
+                                        await fetch("/api/blog/delete", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ id: item.id }),
                                         }).then((res) => {
                                             if (!res.ok) {
                                                 throw new Error("Failed to delete post");
@@ -331,7 +294,5 @@ export default function Page() {
                 ))}
             </div>
         </div>
-    ) : (
-        <Login onLoginSuccess={(t) => setToken(t)} />
     )
 }
