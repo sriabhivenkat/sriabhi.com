@@ -1,6 +1,7 @@
 "use client";
 import Navbar from "@/components/Navbar";
-import React, { useEffect, useState, useRef } from "react";
+import React, { Suspense, useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useCollectionStore } from "../../../../../hooks/useCollectionsStore";
 import { UploadCloud, X, Sparkles, CheckCircle2 } from "lucide-react";
 import DashNav from "@/components/DashNav";
@@ -13,13 +14,14 @@ function formatBytes(bytes: number) {
     return `${mb.toFixed(1)} MB`;
 }
 
-export default function Page() {
+function UploadPhotosInner() {
+    const searchParams = useSearchParams();
     const [photos, setPhotos] = useState<File[]>([]);
     const [totalFileSize, setTotalFileSize] = useState<number>(0);
     const [loading, setLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [successMessage, setSuccessMessage] = useState("");
-    const [path, setPath] = useState("");
+    const [path, setPath] = useState(() => searchParams.get("collection") ?? "");
     const [modal, setModal] = useState<ModalType>(null);
     const { collections, fetchCollections } = useCollectionStore();
     const [uploadedCount, setUploadedCount] = useState(0);
@@ -311,5 +313,13 @@ export default function Page() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function Page() {
+    return (
+        <Suspense fallback={null}>
+            <UploadPhotosInner />
+        </Suspense>
     );
 }

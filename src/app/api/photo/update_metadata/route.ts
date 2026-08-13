@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getAccessToken } from '../../../../../functions/abhiPcCalls';
+import { requireAuth } from '@/lib/auth';
 
 
 export async function POST(req: Request) {
   try {
+    if (!(await requireAuth(req))) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { access_token } = await getAccessToken();
 

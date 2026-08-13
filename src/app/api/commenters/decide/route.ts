@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAccessToken } from '../../../../../functions/abhiPcCalls';
+import { requireAuth } from '@/lib/auth';
 
 export async function POST(req: Request) {
+  if (!(await requireAuth(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id, decision } = await req.json();
   if (!id || !['approve', 'block', 'unblock'].includes(decision)) {
     return NextResponse.json({ error: 'Missing id or invalid decision' }, { status: 400 });

@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangePublicToken, getAccessToken } from "../../../../functions/abhiPcCalls";
+import { requireAuth } from '@/lib/auth';
 
 const baseUrl = "http://localhost:8080";
 
 export async function POST(req: NextRequest) {
+    if (!(await requireAuth(req))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { public_token, existing_item_id } = await req.json();
 
     console.log("Exchanging public token for fresh access token...");

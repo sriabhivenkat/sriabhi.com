@@ -3,6 +3,7 @@ import { PhotoWithMetadata } from "../../hooks/usePhotoStore";
 import mapboxgl from "mapbox-gl";
 import Image from "next/image";
 import MapboxMap from "./MapboxMap";
+import { LocateFixed, Type } from "lucide-react";
 type PhotoRowProps = {
   photo: PhotoWithMetadata & { collectionName: string };
   index: number;
@@ -122,14 +123,18 @@ export default function PhotoRow({ photo, index }: PhotoRowProps) {
           ) : null}
           <div className="flex flex-wrap gap-1 mt-1">
               {photo.metadata?.description &&
-                <p className="text-[10px] sm:text-xs text-[#7A6B70] border border-[#E8E2E4] rounded-md py-0.5 px-1.5 sm:p-1 sm:px-2 text-center">
-                  Has description!
-                </p>
+                <Type 
+                  size={12}
+                  color="#3D2B2E"
+                  className="text-center"
+                />
               }
               {photo.metadata?.geotag &&
-                <p className="text-[10px] sm:text-xs text-[#7A6B70] border border-[#E8E2E4] rounded-md py-0.5 px-1.5 sm:p-1 sm:px-2 text-center">
-                  Has geotag!
-                </p>
+                <LocateFixed 
+                  size={12}
+                  color="#3D2B2E"
+                  className="text-center"
+                />
               }
           </div>
         </div>

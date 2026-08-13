@@ -6,6 +6,7 @@ export interface Collection {
   grabPath: string;
   collection_id?: string;
   cover_url?: string;
+  private?: boolean;
 }
 
 interface CollectionStore {
@@ -13,6 +14,7 @@ interface CollectionStore {
   loading: boolean;
   error: string | null;
   fetchCollections: () => Promise<void>;
+  updateCollection: (grabPath: string, patch: Partial<Collection>) => void;
 }
 
 export const useCollectionStore = create<CollectionStore>((set, get) => ({
@@ -31,5 +33,13 @@ export const useCollectionStore = create<CollectionStore>((set, get) => ({
     } finally {
       set({ loading: false });
     }
-  }
+  },
+
+  updateCollection: (grabPath, patch) => {
+    set((state) => ({
+      collections: state.collections.map((c) =>
+        c.grabPath === grabPath ? { ...c, ...patch } : c
+      ),
+    }));
+  },
 }));

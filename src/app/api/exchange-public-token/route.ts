@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addInstitutionAccounts, connectNewInstitution, exchangePublicToken } from "../../../../functions/abhiPcCalls";
+import { requireAuth } from '@/lib/auth';
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 console.log("route.ts module loaded");
 export async function POST(req: NextRequest) {
+    if (!(await requireAuth(req))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     console.log("Startign flow")
     const { public_token, institution_name, institution_id } = await req.json();
     console.log("Institution name: ", institution_name)

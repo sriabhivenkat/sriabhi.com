@@ -1,11 +1,10 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, BookImage, ClipboardClock, FolderUp, GitCommitVertical, GitPullRequestArrow, Heart, Images, ImageUp, ImageUpscale, LayoutDashboard, Notebook, PiggyBank, Receipt, Send, SquareActivity, Users } from "lucide-react";
+import { ArrowLeft, BookImage, ClipboardClock, FolderUp, GalleryVerticalEnd, GitCommitVertical, GitPullRequestArrow, Heart, Images, ImageUp, ImageUpscale, LayoutDashboard, Notebook, PiggyBank, Receipt, Send, SquareActivity, Users } from "lucide-react";
 import Link from "next/link";
 import DashNav from "./DashNav";
 
-interface DashboardProps { token: string; }
 interface SelectedAction {
   title: string; subtitle: string;
   icon: () => React.JSX.Element; options: Option[];
@@ -13,7 +12,7 @@ interface SelectedAction {
 interface Option { action: string; path: string; icon?: () => React.JSX.Element }
 interface Message { role: "user" | "assistant"; content: string; }
 
-export default function Dashboard({ token }: DashboardProps) {
+export default function Dashboard() {
   const [query, setQuery] = useState("");
   const [greeting, setGreeting] = useState("");
   const [selectedAction, setSelectedAction] = useState<SelectedAction>();
@@ -55,7 +54,7 @@ export default function Dashboard({ token }: DashboardProps) {
     { title: "Photos", subtitle: "Tweak collections", icon: () => <Images size={30} color="#EECF6D" />, 
       options: [
         { action: "Upload photos", path: "/internal/photo_tools/upload_photos", icon: () => <ImageUp size={30} color="#EECF6D"/>}, 
-        { action: "Edit collections", path: "/internal/photo_tools", icon: () => <BookImage size={30} color="#EECF6D"/>},
+        { action: "Edit collections", path: "/internal/photo_tools", icon: () => <GalleryVerticalEnd size={30} color="#EECF6D"/>},
         { action: "Edit photos", path: "/internal/photo_tools/edit_photos", icon: () => <ImageUpscale size={30} color="#EECF6D"/>}
       ] 
     },

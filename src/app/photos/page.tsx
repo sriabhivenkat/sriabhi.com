@@ -19,7 +19,7 @@ export default function Page() {
     });
   }, [collections]);
 
-  const real_photos = collections.filter((c) => c.grabPath != "iphone_photos")
+  const real_photos = collections.filter((c) => c.grabPath != "iphone_photos" && !c.private)
   const cards = real_photos.map(loc => ({
     ...loc,
     coverUrl: loc.cover_url ? "https://home.sriabhi.com" + loc.cover_url : null,

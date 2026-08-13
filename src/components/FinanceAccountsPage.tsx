@@ -5,7 +5,6 @@ import { LineChart, lineElementClasses } from '@mui/x-charts/LineChart';
 import { ChartsReferenceLine } from "@mui/x-charts";
 import { ChartCandlestick, Home, LucideArrowDownRightFromCircle, LucideArrowRightCircle, LucideArrowUpRightFromCircle, PiggyBank, Receipt, RotateCw } from "lucide-react";
 import Link from "next/link";
-import { getStoredAccessToken } from "../../functions/abhiPcCalls";
 
 export interface Account {
     account_id: string;

@@ -224,27 +224,20 @@ export async function subscribeToBlog(email: string, firstName: string) {
   }
 }
 
-export async function login(username: string, password: string) {
-  const res = await fetch(`${baseUrl}/api/v1/request_access_token`, {
+export async function loginAdmin(username: string, password: string) {
+  const res = await fetch("/api/auth/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
 
   if (!res.ok) {
     throw new Error("Wrong password. Try again!");
   }
-
-  const data = await res.json();
-  localStorage.setItem("access_token", data.access_token);
-  return data.access_token;
 }
 
-export function getStoredAccessToken() {
-  return localStorage.getItem("access_token");
+export async function logoutAdmin() {
+  await fetch("/api/auth/logout", { method: "POST" });
 }
 
 export async function getCollections(): Promise<{ name: string; grabPath: string }[]> {

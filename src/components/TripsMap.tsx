@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import MapboxMap from "./MapboxMap";
 
@@ -23,7 +23,7 @@ export default function SimpleMap({
   onMarkerClick?: (postId: string) => void;
   center?: Geotag | [number, number];
 }) {
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   // Clear markers on unmount
@@ -36,7 +36,6 @@ export default function SimpleMap({
 
   // Add markers once the map + style are ready
   useEffect(() => {
-    const map = mapRef.current;
     if (!map) return;
 
     const addMarkers = () => {
@@ -72,7 +71,7 @@ export default function SimpleMap({
     } else {
       map.once("style.load", addMarkers);
     }
-  }, [markers, onMarkerClick]);
+  }, [map, markers, onMarkerClick]);
 
   return (
     <MapboxMap
@@ -81,8 +80,8 @@ export default function SimpleMap({
       projection="globe"
       fog
       className="w-full h-full rounded-lg"
-      onLoad={(map) => {
-        mapRef.current = map;
+      onLoad={(m) => {
+        setMap(m);
       }}
     />
   );

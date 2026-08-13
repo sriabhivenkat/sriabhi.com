@@ -1,7 +1,9 @@
   "use client";
 
   import Link from "next/link";
+  import { useRouter } from "next/navigation";
   import React, { useState } from "react";
+  import { logoutAdmin } from "../../functions/abhiPcCalls";
 
   export default function DashNav() {
     const [open, setOpen] = useState(false);
@@ -45,9 +47,16 @@
   }
 
   function NavLinks({ mobile = false, setOpen}: { mobile?: boolean, setOpen: any}) {
+    const router = useRouter();
     const cls = mobile
       ? "py-1 text-black text-base bg-[#F4F2F3]/90 backdrop-blur-md"
       : "text-black hover:text-gray-600 transition";
+
+    const handleLogout = async () => {
+      setOpen(false);
+      await logoutAdmin();
+      router.replace("/internal/login");
+    };
 
     return (
       <>
@@ -56,6 +65,7 @@
         <Link href="/internal/blog_tools" onClick={() => setOpen(false)}><p className={cls}>Blog Tools</p></Link>
         <Link href="/internal/photo_tools" onClick={() => setOpen(false)}><p className={cls}>Photo Tools</p></Link>
         <Link href="/internal/health_tools" onClick={() => setOpen(false)}><p className={cls}>Health Tools</p></Link>
+        <button onClick={handleLogout} className={`${cls} text-left cursor-pointer bg-transparent border-0 p-0`}>Log out</button>
       </>
     );
   }

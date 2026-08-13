@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAccessToken } from '../../../../functions/abhiPcCalls';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
   const posts = await listRes.json();
   const post = posts.find((p: any) => p.id === id);
 
-  if (!post) {
+  if (!post || (!post.active && !(await requireAuth(req)))) {
     return NextResponse.json({ error: 'Post not found' }, { status: 404 });
   }
 

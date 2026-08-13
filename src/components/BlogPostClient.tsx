@@ -8,7 +8,7 @@ import CopyableCodeBlock from "@/components/CodeBlock";
 import Navbar from "@/components/Navbar";
 import mapboxgl from "mapbox-gl";
 import MapboxMap from "./MapboxMap";
-import { AArrowDown, ArrowDown, ChevronDown} from "lucide-react";
+import { AArrowDown, ArrowDown, ChevronDown, MapPin } from "lucide-react";
 import { usePhotoStore } from "../../hooks/usePhotoStore";
 import { Collection, useCollectionStore } from "../../hooks/useCollectionsStore";
 import Link from "next/link";
@@ -197,13 +197,16 @@ export default function BlogPostClient({ id }: { id: string }) {
               <button
                 type="button"
                 onClick={() => setTripInfoExpanded((prev) => !prev)}
-                className="w-full bg-[#3D2B2E] rounded-lg p-2 justify-between items-center flex cursor-pointer"
+                className="w-full bg-[#3D2B2E] hover:bg-[#4a3439] active:scale-[0.99] rounded-xl px-4 py-3 justify-between items-center flex cursor-pointer shadow-sm transition-all duration-200"
               >
-                <p className="text-white text-md font-serif-custom">
-                  Trip Info
-                </p>
+                <span className="flex items-center gap-2">
+                  <MapPin size={18} color="white" />
+                  <p className="text-white text-md font-serif-custom font-bold tracking-wide">
+                    Trip Info
+                  </p>
+                </span>
                 <ChevronDown
-                  size={30}
+                  size={22}
                   color="white"
                   className={`transition-transform duration-300 ${tripInfoExpanded ? "rotate-180" : ""}`}
                 />
@@ -214,30 +217,36 @@ export default function BlogPostClient({ id }: { id: string }) {
                   tripInfoExpanded ? "max-h-[600px] opacity-100 mt-2" : "max-h-0 opacity-0"
                 }`}
               >
-                {showGeoMap && <BlogGeoMap geotags={post?.geotags} />}
-                {post?.collection_id && (
-                  <Link
-                    className="bg-white rounded-lg w-full mt-2 p-2 flex items-center gap-3"
-                    href={`/photos/${bindedCol?.grabPath.split("/")[1]}`}
-                  >
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
-                      <Image
-                        src={bindedCol?.cover_url || ""}
-                        fill
-                        quality={100}
-                        sizes="64px"
-                        className="object-cover"
-                        alt={bindedCol?.name || "Collection cover"}
-                      />
+                <div className="flex flex-col gap-2 rounded-xl border border-[#E8E2E4] bg-white/70 p-2 shadow-sm">
+                  {showGeoMap && (
+                    <div className="overflow-hidden rounded-lg">
+                      <BlogGeoMap geotags={post?.geotags} />
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <p className="text-sm text-gray-500 font-serif-custom">Associated Collection</p>
-                      <h1 className="text-xl font-serif-custom font-black text-[#3D2B2E] truncate">
-                        {bindedCol?.name}
-                      </h1>
-                    </div>
-                  </Link>
-                )}
+                  )}
+                  {post?.collection_id && bindedCol?.cover_url && (
+                    <Link
+                      className="group bg-white rounded-lg w-full p-2 flex items-center gap-3 border border-[#E8E2E4] hover:border-[#3D2B2E]/30 hover:bg-[#F4F2F3] transition-colors"
+                      href={`/photos/${bindedCol.grabPath.split("/")[1]}`}
+                    >
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                        <Image
+                          src={bindedCol.cover_url}
+                          fill
+                          quality={100}
+                          sizes="64px"
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          alt={bindedCol.name || "Collection cover"}
+                        />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-sm text-gray-500 font-serif-custom">Associated Collection</p>
+                        <h1 className="text-xl font-serif-custom font-black text-[#3D2B2E] truncate">
+                          {bindedCol?.name}
+                        </h1>
+                      </div>
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -322,15 +331,18 @@ export default function BlogPostClient({ id }: { id: string }) {
         {showGeoMap && (
            <div className="w-1/3 h-1/2 sticky top-14 overflow-hidden">
               <BlogGeoMap geotags={post?.geotags} />
-              {post?.collection_id && (
-              <Link className="bg-white rounded-lg w-full mt-2 p-2 flex items-center gap-3" href={`/photos/${bindedCol?.grabPath.split("/")[1]}`}>
+              {post?.collection_id && bindedCol?.cover_url && (
+              <Link
+                className="group bg-white rounded-lg w-full mt-2 p-2 flex items-center gap-3 border border-[#E8E2E4] shadow-sm hover:border-[#3D2B2E]/30 hover:bg-[#F4F2F3] transition-colors"
+                href={`/photos/${bindedCol?.grabPath.split("/")[1]}`}
+              >
                 <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
                   <Image
-                    src={bindedCol?.cover_url || ""}
+                    src={bindedCol.cover_url}
                     fill
                     quality={100}
                     sizes="64px"
-                    className="object-cover"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                     alt={bindedCol?.name || "Collection cover"}
                   />
                 </div>

@@ -85,6 +85,47 @@ function PinnedSideCard({
   );
 }
 
+// Card used in the horizontal Projects row
+function ProjectCard({
+  post,
+  loaded,
+  onLoad,
+}: {
+  post: Post;
+  loaded: boolean;
+  onLoad: () => void;
+}) {
+  const years = post.start_year
+    ? `${post.start_year}${post.end_year && post.end_year !== post.start_year ? ` – ${post.end_year}` : post.end_year ? "" : " – Present"}`
+    : null;
+
+  return (
+    <Link href={`/blog/${post.id}`} className="group flex flex-col w-48 sm:w-56 lg:w-full shrink-0 lg:shrink">
+      <CoverImage post={post} loaded={loaded} onLoad={onLoad} className="aspect-[4/3] w-full" />
+      <div className="pt-2">
+        <h3 className="text-base font-serif-custom font-black text-black leading-tight line-clamp-2 group-hover:underline">
+          {post.title}
+        </h3>
+        <p className="text-xs text-black/60 line-clamp-2 mt-0.5">{post.subtitle}</p>
+        {years && <p className="text-[11px] text-black/40 mt-1">{years}</p>}
+      </div>
+    </Link>
+  );
+}
+
+function ProjectCardSkeleton() {
+  return (
+    <div className="flex flex-col w-48 sm:w-56 lg:w-full shrink-0 lg:shrink">
+      <div className="aspect-[4/3] w-full rounded-lg animate-shimmer bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 bg-[length:200%_100%]" />
+      <div className="pt-2 space-y-1.5">
+        <div className="h-4 w-3/4 rounded bg-gray-300 animate-pulse" />
+        <div className="h-3 w-full rounded bg-gray-200 animate-pulse" />
+        <div className="h-2.5 w-1/3 rounded bg-gray-200 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 function PinnedSideSkeleton() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -143,7 +184,7 @@ export default function Page() {
         data
           ?.map((p) => ({ ...p, date_created: new Date(p.date_created as any) }))
           .filter((p) => p.title !== "abhi_resume")
-          .filter((p) => p.active && p.blog_type != 2)
+          .filter((p) => p.active)
           .sort((a, b) => +b.date_created! - +a.date_created!)
       );
     };
@@ -155,13 +196,19 @@ export default function Page() {
     [posts]
   );
 
+  const projects = useMemo(
+    () => posts.filter((p) => mapBlogType(p) === "PROJECT"),
+    [posts]
+  );
 
   const center = useMemo(
-    () => posts.find((p) => mapBlogType(p) !== "TRIP") ?? null,
+    () => posts.find((p) => mapBlogType(p) !== "TRIP" && mapBlogType(p) !== "PROJECT") ?? null,
     [posts]
   );
   const surrounding = useMemo(() => {
-    const rest = posts.filter((p) => p.id !== center?.id && mapBlogType(p) !== "TRIP");
+    const rest = posts.filter(
+      (p) => p.id !== center?.id && mapBlogType(p) !== "TRIP" && mapBlogType(p) !== "PROJECT"
+    );
     const pinnedPosts = rest.filter((p) => p.pinned);
     const pinnedIds = new Set(pinnedPosts.map((p) => p.id));
     const unpinnedRest = rest.filter((p) => !pinnedIds.has(p.id));
@@ -175,7 +222,10 @@ export default function Page() {
     [center, surrounding]
   );
   const others = useMemo(
-    () => posts.filter((p) => !featuredIds.has(p.id) && mapBlogType(p) !== "TRIP"),
+    () =>
+      posts.filter(
+        (p) => !featuredIds.has(p.id) && mapBlogType(p) !== "TRIP" && mapBlogType(p) !== "PROJECT"
+      ),
     [posts, featuredIds]
   );
 
@@ -326,7 +376,20 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-6 pt-4 border-t border-gray-300">
-          <h2 className="text-2xl font-serif-custom text-black mb-3">Trips</h2>
+          <h2 className="text-2xl font-serif-custom text-black mb-1">Projects</h2>
+          <p className="text-sm text-black/50 italic mb-3">AI is probably taking my job. This is how I cope (or learn).</p>
+          <div className="flex gap-4 overflow-x-auto pb-2 -mx-3 px-3 lg:grid lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] lg:overflow-visible">
+            {posts.length === 0
+              ? Array.from({ length: 4 }).map((_, i) => <ProjectCardSkeleton key={i} />)
+              : projects.map((post) => (
+                  <ProjectCard
+                    key={post.id}
+                    post={post}
+                    loaded={!!loadedImages[post.id]}
+                    onLoad={() => markLoaded(post.id)}
+                  />
+                ))}
+          </div>
         </div>
 
         {/* Other reads — everything past the featured 5 */}

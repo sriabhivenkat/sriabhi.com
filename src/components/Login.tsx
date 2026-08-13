@@ -1,10 +1,10 @@
 "use client";
 import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
-import { login } from "../../functions/abhiPcCalls";
+import { loginAdmin } from "../../functions/abhiPcCalls";
 
 interface LoginProps {
-  onLoginSuccess: (token: string) => void;
+  onLoginSuccess: () => void;
 }
 
 export default function Login({ onLoginSuccess }: LoginProps) {
@@ -14,9 +14,9 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
   const handleSubmit = async () => {
     try {
-      const accessToken = await login(user, pass);
+      await loginAdmin(user, pass);
       setError("");
-      onLoginSuccess(accessToken);
+      onLoginSuccess();
     } catch (e: any) {
       setError(e?.message || "Login failed");
     }

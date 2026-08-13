@@ -1,6 +1,19 @@
 import Image from "next/image";
 import { PhotoWithMetadata } from "../../hooks/usePhotoStore";
 import { useState } from "react";
+import { LocateFixed, NotepadText, Type } from "lucide-react";
+
+function formatAperture(aperture: string) {
+  const match = aperture.match(/[\d.]+/);
+  if (!match) return aperture;
+  const rounded = parseFloat(match[0]).toFixed(1);
+  return aperture.replace(match[0], rounded);
+}
+
+function formatShutterSpeed(shutterSpeed: string) {
+  const num = parseFloat(shutterSpeed);
+  return isNaN(num) ? shutterSpeed : num.toFixed(1);
+}
 
 export default function PhotoCard({ photo, index, needsLocation }: { photo: PhotoWithMetadata; index: number, needsLocation: boolean}) {
   const [loaded, setLoaded] = useState(false);
@@ -44,10 +57,15 @@ export default function PhotoCard({ photo, index, needsLocation }: { photo: Phot
             }
         </p>
         {photo.metadata?.description && photo.metadata?.geotag && (
-          <div className="flex border border-[#E8E2E4] rounded-md p-1 px-2 text-center">
-            <p className="text-xs text-[#7A6B70]">
-              <span className="font-bold text-[#1B998B]">New!</span> Photo Notes.
-            </p>
+          <div className="flex border border-[#E8E2E4] rounded-md p-1 px-2 text-center gap-x-2">
+            <Type 
+              size={15}
+              color="#3D2B2E"
+            />
+            <LocateFixed 
+              size={15}
+              color="#3D2B2E"
+            />
           </div>
         )}
       </div>
@@ -66,13 +84,13 @@ export default function PhotoCard({ photo, index, needsLocation }: { photo: Phot
         )}
         {photo.metadata?.aperture && (
           <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
-            <p className={`text-black ${needsLocation ? "text-md" : "text-xl"} font-black`}><strong>{photo.metadata.aperture} |</strong></p>
+            <p className={`text-black ${needsLocation ? "text-md" : "text-xl"} font-black`}><strong>{formatAperture(photo.metadata.aperture)} |</strong></p>
           </div>
         )}
         {photo.metadata?.shutter_speed && (
           <div className="h-8 flex font-serif-custom items-center flex-shrink-0">
             <p className={`text-black ${needsLocation ? "text-md" : "text-xl"} font-black`}>
-              <strong>1/{photo.metadata.shutter_speed}s |</strong>
+              <strong>1/{formatShutterSpeed(photo.metadata.shutter_speed)}s |</strong>
             </p>
           </div>
         )}

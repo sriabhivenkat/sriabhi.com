@@ -7,20 +7,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const formData = await req.formData();
-  const { access_token } = await getAccessToken();
+  const { collection_id } = await req.json();
+  if (!collection_id) return NextResponse.json({ error: 'Missing collection_id' }, { status: 400 });
 
-  const res = await fetch('https://home.sriabhi.com/api/v1/upload_files', {
+  const { access_token } = await getAccessToken();
+  const res = await fetch(`https://home.sriabhi.com/api/v1/photo/update_col_status/${collection_id}`, {
     method: 'POST',
-    body: formData,
     headers: { Authorization: `Bearer ${access_token}` },
   });
 
-  const data = await res.json().catch(() => null);
-
   if (!res.ok) {
-    return NextResponse.json({ error: data?.error || 'Failed to upload blog' }, { status: res.status });
+    return NextResponse.json({ error: 'Failed to toggle collection status' }, { status: res.status });
   }
 
+  const data = await res.json();
   return NextResponse.json(data);
 }
